@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-08-30
+
+### Fixed
+
+- The first deploy failed because the repository had no Pages site and the
+  workflow would not create one. It now enables Pages itself, so a fresh clone
+  or fork deploys without anyone changing a setting by hand.
+- Moved off actions still targeting Node 20, which the runner forces onto
+  Node 24 with a deprecation warning.
+
 ## [1.0.0] - 2026-08-30
 
 First release: turn any URL into a 3D maze you can walk through, then scan the
@@ -79,5 +89,6 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/amirzenoozi/qr-maze/releases/tag/v1.0.0
