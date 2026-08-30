@@ -63,6 +63,52 @@ body {
   overflow: hidden;
 }
 
+/*
+ * Pinned to the viewport rather than the screen box: the start panel scrolls
+ * on short windows, and a credit that scrolls away is a credit nobody sees.
+ */
+.profile-link {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 3px solid var(--border);
+  box-shadow: 4px 4px 0 var(--shadow);
+  color: var(--muted);
+  font-family: var(--pixel);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-decoration: none;
+}
+
+.profile-link:hover,
+.profile-link:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.profile-link:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--shadow);
+}
+
+.profile-link__mark {
+  width: 16px;
+  height: 16px;
+  fill: currentcolor;
+}
+
+@media (max-width: 520px) {
+  .profile-link__handle {
+    display: none;
+  }
+}
+
 .panel {
   background: var(--panel);
   border: 4px solid var(--border);
