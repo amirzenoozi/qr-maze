@@ -1,0 +1,50 @@
+import { useLayoutEffect, useMemo } from 'react';
+import { floorExtent } from '../lib/maze/layout';
+import type { Maze } from '../lib/maze/types';
+import { getPixelTextures } from '../lib/render/pixelTextures';
+import type { CameraMode } from '../store/gameStore';
+
+interface FloorProps {
+  readonly maze: Maze;
+  readonly cameraMode: CameraMode;
+}
+
+/**
+ * The light-module plane the player walks on: a gravel park path.
+ *
+ * The gravel palette is deliberately near-white. Light modules are what a
+ * scanner reads as "white", so anything darker here would eat into the
+ * contrast the symbol depends on.
+ *
+ * In scan mode the plane becomes unlit pure white so that, together with the
+ * black wall tops, the top-down view is a genuine high-contrast QR code.
+ */
+export function Floor({ maze, cameraMode }: FloorProps): React.JSX.Element {
+  // Includes the quiet zone, without which a scanner cannot lock on.
+  const extent = floorExtent(maze.size);
+
+  // One texture tile per QR module, so the gravel grid lines up with the maze
+  // grid instead of drifting across it. `repeat` is per-texture but the pixel
+  // data is shared, so this clones the cached texture rather than mutating it.
+  const path = useMemo(() => {
+    const texture = getPixelTextures().path.clone();
+    texture.repeat.set(extent, extent);
+    texture.needsUpdate = true;
+    return texture;
+  }, [extent]);
+
+  // The clone is owned by this component; three.js reference-counts the
+  // underlying image source, so disposing it leaves the cached original intact.
+  useLayoutEffect(() => () => path.dispose(), [path]);
+
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow={cameraMode === 'gameplay'}>
+      <planeGeometry args={[extent, extent]} />
+      {cameraMode === 'scan' ? (
+        <meshBasicMaterial color="#ffffff" />
+      ) : (
+        <meshStandardMaterial map={path} roughness={0.95} metalness={0} />
+      )}
+    </mesh>
+  );
+}
