@@ -364,9 +364,9 @@ kbd {
 
 /* ------------------------------------------------------------- scan badge */
 
-/* The badge is a button: clicking it zooms the card to the middle of the
-   screen. All the default button chrome is stripped so it still reads as a
-   printed card rather than a control. */
+/* Closed, the card is a button that zooms to the middle of the screen. Open,
+   it is a dialog, so the click target moves inside and the card itself becomes
+   a plain container. */
 .scan-badge {
   position: absolute;
   right: 16px;
@@ -381,19 +381,30 @@ kbd {
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  font: inherit;
-  cursor: zoom-in;
-  appearance: none;
   /* The FLIP inversion in ScanBadge.tsx is measured from the top-left. */
   transform-origin: top left;
 }
 
-.scan-badge:hover {
+.scan-badge:not(.scan-badge--open):hover {
   border-color: var(--accent);
 }
 
-.scan-badge:active {
+.scan-badge:not(.scan-badge--open):active {
   box-shadow: none;
+}
+
+.scan-badge__toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  background: none;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  cursor: zoom-in;
+  appearance: none;
 }
 
 /* Centred with auto margins rather than a translate, because the zoom
@@ -404,12 +415,62 @@ kbd {
   margin: auto;
   width: fit-content;
   height: fit-content;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   z-index: 5;
   padding: 16px;
   gap: 12px;
   border-width: 6px;
   box-shadow: 10px 10px 0 rgb(10 17 32 / 55%);
-  cursor: zoom-out;
+}
+
+.scan-badge__tabs {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+
+/* Two codes point at different things, so the choice is a visible switch
+   rather than a hidden setting. */
+.scan-badge__tab {
+  flex: 1;
+  padding: 8px 10px;
+  background: #ffffff;
+  border: 3px solid var(--shadow);
+  color: var(--shadow);
+  font-family: var(--pixel);
+  font-size: 8px;
+  line-height: 1.6;
+  letter-spacing: 1px;
+  cursor: pointer;
+  appearance: none;
+}
+
+.scan-badge__tab[aria-pressed='true'] {
+  background: var(--shadow);
+  color: #ffffff;
+}
+
+.scan-badge__tab:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.scan-badge__notice {
+  margin: 0;
+  max-width: min(380px, calc(100vw - 80px));
+  font-size: 11px;
+  line-height: 1.5;
+  text-align: center;
+  color: #4a5875;
+}
+
+.scan-badge__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
 }
 
 .scan-badge__code {

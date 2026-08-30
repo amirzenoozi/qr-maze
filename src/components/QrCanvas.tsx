@@ -1,74 +1,64 @@
 import { useLayoutEffect, useRef } from 'react';
-import type { Maze } from '../lib/maze/types';
-import { QR_STYLES, renderQr } from '../lib/qr/render';
 
-/** Light margin, in modules. The QR spec requires at least four. */
+import { DEFAULT_STYLE, renderQr, type QrStyle } from '../lib/qr/render';
+
+/** Light margin, in modules. Decoders need it to find the symbol edge. */
 const QUIET_ZONE = 4;
 
-/** Preset used everywhere. Every preset is decode-tested in `render.test.ts`. */
-const STYLE = QR_STYLES.rounded;
-
 interface QrCanvasProps {
-  readonly maze: Maze;
-  /** Canvas pixels per module. Raise it when the code is shown large. */
+  /** Row-major module buffer, 1 = dark. */
+  readonly modules: Uint8Array;
+  readonly size: number;
+  /** Accessible description of what this code points at. */
+  readonly label: string;
+  readonly style?: QrStyle;
   readonly modulePx?: number;
+  /** Lets the owner reach the pixels, for download and share. */
+  readonly canvasRef?: React.RefObject<HTMLCanvasElement | null>;
   readonly className?: string;
 }
 
 /**
- * The live maze drawn as a scannable QR code.
+ * Draws a matrix to a 2D canvas.
  *
- * This draws the *carved* matrix — the same modules the player walks through —
- * which `buildMaze` has already round-tripped through a real decoder, so what
- * a phone reads here is exactly the maze on screen.
- *
- * It is drawn flat to a 2D canvas rather than captured from the 3D scene: no
- * camera angle, lighting or hedge can interfere, so scanning works during
- * normal play instead of only in the top-down view.
- *
- * The styling (rounded modules, rounded finder eyes) comes from a pure
- * matrix-to-RGBA renderer, which lets the test suite push the exact pixels the
- * browser shows through a real decoder. Styling can therefore never silently
- * break scanning.
+ * Flat, not captured from the 3D scene: camera angle, lighting and hedges
+ * would all get in the way of a decoder, and this way the code is readable
+ * during normal play.
  */
 export function QrCanvas({
-  maze,
+  modules,
+  size,
+  label,
+  style = DEFAULT_STYLE,
   modulePx = 10,
+  canvasRef,
   className,
 }: QrCanvasProps): React.JSX.Element {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const fallbackRef = useRef<HTMLCanvasElement>(null);
+  const ref = canvasRef ?? fallbackRef;
 
   useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
+    const canvas = ref.current;
+    if (canvas === null) {
+      return;
+    }
 
-    const raster = renderQr(maze.modules, maze.size, {
-      ...STYLE,
-      scale: modulePx,
-      quietZone: QUIET_ZONE,
-    });
-
+    const raster = renderQr(modules, size, { ...style, scale: modulePx, quietZone: QUIET_ZONE });
     canvas.width = raster.width;
     canvas.height = raster.height;
 
     const context = canvas.getContext('2d');
-    if (!context) return;
+    if (context === null) {
+      return;
+    }
 
     context.putImageData(new ImageData(raster.data, raster.width, raster.height), 0, 0);
-  }, [maze, modulePx]);
+  }, [ref, modules, size, style, modulePx]);
 
   return (
-    /*
-      The canvas is deliberately larger than its CSS box and left to the
-      browser's smooth downscaler. Nearest-neighbour downscaling — the
-      `pixelated` mode used everywhere else in this UI — can drop entire module
-      rows on the floor and silently break the code.
-    */
-    <canvas
-      ref={canvasRef}
-      className={className}
-      role="img"
-      aria-label={`QR code for ${maze.url}`}
-    />
+    // The canvas is deliberately larger than its CSS box and left to the
+    // browser's smooth downscaler. Nearest-neighbour scaling, which the rest of
+    // the pixel-art UI uses, can drop whole module rows and break the code.
+    <canvas ref={ref} className={className} role="img" aria-label={label} />
   );
 }
