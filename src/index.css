@@ -348,8 +348,15 @@ kbd {
   gap: 8px;
 }
 
+/* One binding per line: a single run-on row of keys is read as prose and
+   skipped, a list is scanned. */
 .hud__hint {
   margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
   font-size: 12px;
   color: var(--muted);
   text-shadow: 1px 1px 0 var(--shadow);

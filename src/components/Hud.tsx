@@ -59,10 +59,20 @@ export function Hud(): React.JSX.Element | null {
       </div>
 
       <div className="hud__controls">
-        <p className="hud__hint">
-          <kbd>WASD</kbd> / arrows move · <kbd>Space</kbd> scan code ·{' '}
-          <kbd>C</kbd> top view · <kbd>R</kbd> restart
-        </p>
+        <ul className="hud__hint">
+          <li>
+            <kbd>WASD</kbd> / arrows — move
+          </li>
+          <li>
+            <kbd>Space</kbd> — scan code
+          </li>
+          <li>
+            <kbd>C</kbd> — top view
+          </li>
+          <li>
+            <kbd>R</kbd> — restart
+          </li>
+        </ul>
 
         <div className="hud__actions">
           <button className="button" type="button" onClick={restart}>
