@@ -1,8 +1,10 @@
 name: Deploy
 
+# Releases ship, branches do not. Only a version tag publishes to Pages, so
+# the live site always corresponds to a tag you can check out.
 on:
   push:
-    branches: [main]
+    tags: ['v*']
   workflow_dispatch:
 
 # Allow the workflow to publish to Pages via OIDC.
