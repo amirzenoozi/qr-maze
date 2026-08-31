@@ -3,7 +3,7 @@ import * as THREE from 'three';
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
-import { mulberry32 } from '../lib/render/random';
+import { mulberry32 } from '../lib/random';
 import type { CameraMode } from '../store/gameStore';
 
 /** Share of grass blocks that grow at least one blossom. */

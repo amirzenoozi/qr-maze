@@ -6,7 +6,7 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
-import { mulberry32 } from '../lib/render/random';
+import { mulberry32 } from '../lib/random';
 import type { CameraMode } from '../store/gameStore';
 
 const COUNT = 260;

@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { mulberry32 } from './random';
+import { mulberry32 } from '../random';
 
 /**
  * Procedural pixel-art textures.
