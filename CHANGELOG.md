@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.1] - 2026-08-31
+
+### Changed
+
+- The start screen opens on a LinkedIn profile rather than `https://example.com`.
+  The first maze anyone sees is now a version 4 symbol: 65 moves and 227
+  reachable cells against the old default's 45 and 190, so the game reads as a
+  maze on first sight instead of a short corridor.
+- The GitHub credit sits in the bottom-right corner. At the top it competed
+  with the title for the first glance; at the bottom it stays reachable without
+  being the second thing you read.
+
 ## [1.2.0] - 2026-08-31
 
 ### Changed
@@ -128,7 +140,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.0...v1.0.1
