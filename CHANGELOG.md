@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-08-31
+
+### Changed
+
+- Play links now carry the URL in the fragment (`…/qr-maze/#example.com`)
+  instead of a query parameter. Dropping the `?url=` prefix, the `https://`
+  scheme and the percent-escaping of `:` `/` `?` `&` `=` takes a typical link
+  from 68 characters to 50, which is one to two QR versions smaller and
+  noticeably easier to scan. Links using the old form are still read.
+- The enlarged scan card holds one width across both tabs. It was sized to its
+  contents, so switching between codes of different versions resized the card
+  and made the tabs appear to move.
+
 ## [1.1.0] - 2026-08-30
 
 ### Added
@@ -115,7 +128,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/amirzenoozi/qr-maze/releases/tag/v1.0.0
