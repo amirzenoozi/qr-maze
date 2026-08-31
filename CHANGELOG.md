@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-08-31
+
+### Added
+
+- A row of three pixel hearts in the HUD, counting the retries left on the
+  current board. Nothing in the maze can hurt the player, so a life is not
+  damage: it is the right to start the board over. The first attempt is free
+  and every restart spends a heart — after a loss, after a win, or mid-run
+  with `R`. Charging all three closes the loophole of restarting one move
+  before the budget expires. When the hearts are gone the outcome panel drops
+  its retry button and offers only a new URL, which deals a fresh set.
+
 ## [1.3.0] - 2026-08-31
 
 ### Added
@@ -182,7 +194,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.0...v1.2.1

@@ -122,7 +122,22 @@ Enter a URL, wait out the loading screen, and walk.
 | `W` `A` `S` `D` or arrow keys | Move one module |
 | `Space` | Open or close the enlarged scan card |
 | `C` | Toggle the flat top-down view |
-| `R` | Restart the current maze |
+| `R` | Restart the current maze (spends a retry) |
+
+### Retries
+
+Three hearts in the HUD, on top of a free first attempt, so a URL is worth four
+plays.
+
+Nothing in this maze can hurt you — there are no enemies, no hazards and no
+clock — so a heart here is not damage. It is the right to start the board over.
+Every restart spends one, whether you press *Try again* after running out of
+moves, *Play again* after winning, or `R` halfway through a run. Charging all
+three is what makes the counter mean anything: if only a loss cost a heart, you
+could restart one move before the budget expired and never pay.
+
+When the hearts are gone the board is finished. The overlay drops its retry
+button and offers only a new URL, which deals a fresh set.
 
 ### Difficulty
 
@@ -143,8 +158,8 @@ Neither ever touches a finder, timing or alignment pattern, and every candidate
 fill is tested against a connectivity check before it is kept, so the exit can
 never be sealed off.
 
-Run out of moves and the run ends. Retrying keeps the same board, so what you
-learned about the layout still counts.
+Run out of moves and the run ends. Retrying costs a heart but keeps the same
+board, so what you learned about the layout still counts.
 
 Picking a tier never resizes the code: the error-correction level is chosen
 against a tier-independent probe, so all four tiers of a given link produce the
