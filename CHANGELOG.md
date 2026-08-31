@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-08-30
+
+### Added
+
+- A **play link** for every maze: a second QR code encoding
+  `…/qr-maze/?url=<your URL>`, so scanning it opens the game with the same
+  maze already built. The app reads that parameter on boot and then strips it,
+  so a later refresh does not replay someone else's maze.
+- **Download** and **Share** in the enlarged scan card. Download saves a PNG;
+  Share hands the code and link to the system share sheet, falling back to
+  copying the link where `navigator.share` does not exist.
+- A README section covering both codes and when to use each.
+
+### Changed
+
+- The enlarged scan card draws its code in the square style. The rounded style
+  stays on the corner badge, where nothing is being scanned at arm's length.
+- The keyboard guide lists one binding per line. A single run-on row of keys
+  reads as prose and gets skipped.
+- The scan card is a dialog when open rather than one large button, so the new
+  actions are real controls instead of markup nested inside a button. Clicking
+  the code no longer closes the card; the backdrop, `Escape` and the Close
+  button do, and `Tab` stays inside the card.
+- The start screen links to the author's GitHub profile, and the project now
+  has a README.
+
 ## [1.0.1] - 2026-08-30
 
 ### Fixed
@@ -89,6 +115,7 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/amirzenoozi/qr-maze/releases/tag/v1.0.0
