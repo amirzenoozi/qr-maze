@@ -69,7 +69,7 @@ const BUILD_HOLD_JITTER_MS = 2000;
 let buildSequence = 0;
 
 export const useGameStore = create<GameState>((set, get) => ({
-  url: 'https://example.com',
+  url: 'https://www.linkedin.com/in/amirhosein-duzandeh-zenoozi/',
   status: 'idle',
   error: null,
   maze: null,
