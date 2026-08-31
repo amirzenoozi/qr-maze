@@ -63,26 +63,39 @@ A common misconception is that a higher error-correction level makes paths
 appear. It does not. QR data masking is effectively random, so a raw symbol
 almost never contains a natural corridor at any level.
 
-What a higher level actually buys is a larger **damage budget**:
+What a higher level actually buys is a larger **damage budget** — nominally
+~7% of the alterable area at L, ~15% at M, ~25% at Q and ~30% at H.
 
-| Level | Recoverable | Used for |
-|-------|-------------|----------|
-| L     | ~7%         | default — nearly always enough |
-| M     | ~15%        | |
-| Q     | ~25%        | |
-| H     | ~30%        | last resort |
+The corridor alone barely touches it. Three to six modules opened, against a
+nominal budget of dozens; the route mostly threads through light modules that
+were already there. So for a bare maze, level L wins every time.
 
-In practice level L wins every time, because the carver is stingy. Real numbers
-from `scripts/inspect.ts`:
+#### The nominal budget is wrong for scattered edits
 
-| URL | Version | Size | Carved | Damage | Moves | Winning routes |
-|-----|---------|------|--------|--------|-------|----------------|
-| `https://a.co/x` | 1 | 21² | 3 | 1.44% | 39 | 6 |
-| `https://example.com` | 2 | 25² | 5 | 1.39% | 45 | 1,350 |
-| `https://github.com/amirzenoozi/qr-maze` | 3 | 29² | 6 | 1.06% | 57 | 8 |
+Difficulty needs to alter modules *away* from the corridor, and that turns out
+to cost far more than the percentage suggests. Reed-Solomon repairs whole
+eight-module **codewords**, not individual modules. A contiguous corridor
+damages a handful of codewords; the same number of edits scattered across the
+symbol damages one codeword each.
 
-Three to six modules opened, against a budget of dozens. The corridor mostly
-threads through light modules that were already there.
+Measured against a real decoder, the number of scattered edits a symbol
+tolerates:
+
+| URL | L | M | Q | H |
+|-----|---|---|---|---|
+| `https://a.co/x` | 2 | 5 | 8 | 14 |
+| `https://example.com` | 0 | 5 | 12 | 20 |
+| `https://github.com/amirzenoozi/qr-maze` | 2 | 8 | 15 | 35 |
+| `https://www.linkedin.com/in/amirhosein-duzandeh-zenoozi/` | 4 | 13 | 39 | 55 |
+
+Between 0.4% and 4% of the alterable area — an order of magnitude below the
+nominal figure. So the builder does not estimate. It bisects for the true
+limit by running the decoder (about 4ms a go) and then spends 60% of what it
+finds, keeping the rest in reserve for a phone camera working at an angle, in
+bad light, through motion blur.
+
+This is why a shaped board costs one error-correction level: L has almost no
+scattered headroom to lend.
 
 ### Winning routes
 
@@ -111,8 +124,37 @@ Enter a URL, wait out the loading screen, and walk.
 | `C` | Toggle the flat top-down view |
 | `R` | Restart the current maze |
 
+### Difficulty
+
+Chosen under the URL box, before the build. Every tier reshapes the board, not
+just the allowance:
+
+| Tier | Route | Structure | Move budget | Beacon |
+|------|-------|-----------|-------------|--------|
+| Easy | direct | opens the most extra modules | +60% | on |
+| Normal | direct | opens some | +35% | on |
+| Hard | via one far corner | fills modules in | +15% | on |
+| Insane | via two far corners | fills the most in | +0% | **off** |
+
+Opening modules adds branches and loops, which multiplies the ways to win.
+Filling them in is the only lever that removes alternatives — the budget is
+symmetric, so raising a wall costs a decoder exactly what opening one does.
+Neither ever touches a finder, timing or alignment pattern, and every candidate
+fill is tested against a connectivity check before it is kept, so the exit can
+never be sealed off.
+
+Run out of moves and the run ends. Retrying keeps the same board, so what you
+learned about the layout still counts.
+
+Picking a tier never resizes the code: the error-correction level is chosen
+against a tier-independent probe, so all four tiers of a given link produce the
+same symbol. The candidate order is shared too, which makes Easy's extra
+openings a superset of Normal's — the tiers read as one maze at four levels of
+generosity rather than four unrelated boards.
+
 - **Start** is the blue pad at the top-left. **Exit** is the chequered flag at
-  the bottom-right, under a gold beam tall enough to see over the hedges.
+  the bottom-right, under a gold beam tall enough to see over the hedges —
+  except on Insane, where the beam is unlit and you have to find the flag.
 - The **scan card** pinned to the bottom-right corner is live at all times.
   Point a phone at it during play or after winning; it is the carved matrix,
   the same one the build step decoded to prove it works.
@@ -282,9 +324,11 @@ number of edits. The anchor is then biased toward the top-left corner rather
 than toward the cheapest border cell — that spends slightly more budget, but it
 threads the corridor across the whole board instead of clipping a corner.
 
-**Scannability is proven, not estimated.** The damage percentage is a heuristic.
-The authoritative check is a full decode round-trip through jsQR comparing the
-result to the original URL. If it does not decode, the level is rejected.
+**Scannability is proven, not estimated.** The damage percentage is a heuristic,
+and a badly wrong one for scattered edits. The authoritative check is a full
+decode round-trip through jsQR comparing the result to the original URL — used
+both to reject a level and, by bisection, to discover how much structural
+damage that level can actually absorb.
 
 **Gameplay styling cannot break the code.** The grass, hedges, blossoms, fence
 and trees only exist in gameplay mode. The top-down view and the scan card are
@@ -304,16 +348,20 @@ There is a CLI for looking at what the pipeline produced:
 
 ```bash
 npx vite-node scripts/inspect.ts "https://example.com"
+
+# A leading tier name switches difficulty:
+npx vite-node scripts/inspect.ts insane "https://example.com"
 ```
 
-It prints the chosen level, version, size, carved count, damage ratio,
-endpoints, shortest length, route count and reachable area, followed by an
-ASCII map:
+It prints the chosen level, version, size, carved and plugged counts, damage
+ratio, endpoints, shortest length, move budget, route count and reachable area,
+followed by an ASCII map:
 
 | Symbol | Meaning |
 |--------|---------|
 | `S` `E` | start, exit |
 | `+` | carved open by the maze builder |
+| `x` | light module filled in to prune a route |
 | `#` | wall |
 | `.` | walkable path |
 | `@` | reserved and dark (permanent wall) |

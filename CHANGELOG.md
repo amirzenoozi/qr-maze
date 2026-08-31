@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-08-31
+
+### Added
+
+- Four difficulty tiers, chosen under the URL box on the start screen. Each one
+  reshapes the board rather than only rationing moves: Easy and Normal open
+  extra modules to add branches and loops, Hard and Insane fill light modules
+  in to prune alternatives, Hard bends the corridor through one far corner and
+  Insane through two, and Insane also leaves the exit beacon unlit.
+- A move budget, sized as a fraction of the shortest route — Easy +60%, Normal
+  +35%, Hard +15%, Insane exactly the perfect route. Spending it without
+  reaching the exit ends the run, and the retry keeps the same board so what
+  the player learned about the layout still counts.
+
+### Changed
+
+- The error-correction headroom for scattered edits is now **measured** rather
+  than estimated. The old percentage-of-modules budget overstated it by roughly
+  an order of magnitude, because Reed-Solomon repairs whole eight-module
+  codewords and scattered edits hit a fresh codeword each: at level L a real
+  decoder tolerated between zero and four of them, against a nominal 7%. The
+  builder bisects for the true limit with the decoder itself and spends 60% of
+  what it finds, keeping the rest as headroom for a phone camera working at an
+  angle in bad light.
+- Picking a difficulty never resizes the code. The error-correction level is
+  chosen against a tier-independent probe, so every tier of a given link
+  produces the same symbol — and because the candidate order is shared, Easy's
+  extra openings are a superset of Normal's.
+- Structural edits cost one error-correction level for most links, since level
+  L has almost no scattered headroom to lend.
+
 ## [1.2.2] - 2026-08-31
 
 ### Changed
@@ -151,7 +182,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.2...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.1.0...v1.2.0
