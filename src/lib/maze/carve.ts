@@ -1,4 +1,5 @@
 import { idx, inBounds } from '../qr/types';
+import { shuffle } from '../random';
 import { DIRECTIONS, type Point } from './types';
 
 /**
@@ -230,4 +231,263 @@ export function carveFromBorder(
     ...carveRoute(modules, prev, bestCell, endCell),
     start: { row: (bestCell / size) | 0, col: bestCell % size },
   };
+}
+
+/**
+ * The nearest cell to a target that the search is allowed to stand on.
+ *
+ * A waypoint is picked geometrically, so it can easily land on a dark function
+ * module — the corner of a finder, a dark cell of a timing line — which no
+ * route may cross. Widening the search outward by Chebyshev radius finds the
+ * closest legal stand-in, which is visually indistinguishable at board scale.
+ */
+function nearestLegal(
+  size: number,
+  modules: Uint8Array,
+  reserved: Uint8Array,
+  row: number,
+  col: number,
+): number | null {
+  for (let radius = 0; radius < size; radius++) {
+    for (let dr = -radius; dr <= radius; dr++) {
+      for (let dc = -radius; dc <= radius; dc++) {
+        // Only the ring at exactly this radius is new.
+        if (Math.max(Math.abs(dr), Math.abs(dc)) !== radius) continue;
+
+        const nr = row + dr;
+        const nc = col + dc;
+        if (!inBounds(size, nr, nc)) continue;
+
+        const cell = idx(size, nr, nc);
+        if (stepCost(modules, reserved, cell) !== null) return cell;
+      }
+    }
+  }
+  return null;
+}
+
+/**
+ * Corners the corridor is dragged through before it is allowed to finish.
+ *
+ * The start sits top-left and the exit bottom-right, so an unconstrained route
+ * cuts straight down the diagonal. Sending it to the opposite corners first
+ * bends that line into an L, then a Z, which lengthens the walk a long way
+ * without growing the symbol.
+ */
+function chooseWaypoints(size: number, count: number): Point[] {
+  const near = Math.round(size * 0.15);
+  const far = Math.round(size * 0.85);
+
+  // Bottom-left first, then top-right: taken in this order the legs alternate
+  // direction instead of doubling back on themselves.
+  const corners: Point[] = [
+    { row: far, col: near },
+    { row: near, col: far },
+  ];
+  return corners.slice(0, count);
+}
+
+/**
+ * Carve a corridor that visits each waypoint on its way to the exit.
+ *
+ * Every leg is carved against the matrix the previous legs left behind, so a
+ * later leg crosses an earlier one for free instead of paying to re-open it.
+ * That sharing is what keeps a two-waypoint route affordable.
+ */
+export function carveThroughWaypoints(
+  size: number,
+  modules: Uint8Array,
+  reserved: Uint8Array,
+  start: Point,
+  end: Point,
+  waypointCount: number,
+): CarveResult | null {
+  const stops = [idx(size, start.row, start.col)];
+
+  for (const point of chooseWaypoints(size, waypointCount)) {
+    const cell = nearestLegal(size, modules, reserved, point.row, point.col);
+    // A waypoint with no legal cell anywhere near it is not worth failing
+    // over; the route simply skips that corner.
+    if (cell !== null && cell !== stops[stops.length - 1]) stops.push(cell);
+  }
+  stops.push(idx(size, end.row, end.col));
+
+  let current: Uint8Array = Uint8Array.from(modules);
+  const carved = new Uint8Array(modules.length);
+  let carvedCount = 0;
+
+  for (let leg = 0; leg + 1 < stops.length; leg++) {
+    const from = stops[leg];
+    const to = stops[leg + 1];
+
+    const { dist, prev } = searchFrom(size, current, reserved, from);
+    if (dist[to] === -1) return null;
+
+    const result = carveRoute(current, prev, to, from);
+    current = result.modules;
+
+    for (let cell = 0; cell < carved.length; cell++) {
+      if (result.carved[cell] === 1 && carved[cell] === 0) {
+        carved[cell] = 1;
+        carvedCount++;
+      }
+    }
+  }
+
+  return { modules: current, carved, carvedCount };
+}
+
+/** Cells reachable on foot from a source, as a mask. */
+function reachableFrom(size: number, modules: Uint8Array, source: number): Uint8Array {
+  const seen = new Uint8Array(modules.length);
+  if (modules[source] === 1) return seen;
+
+  const queue = [source];
+  seen[source] = 1;
+
+  for (let head = 0; head < queue.length; head++) {
+    const cell = queue[head];
+    const row = (cell / size) | 0;
+    const col = cell % size;
+
+    for (const [dr, dc] of DIRECTIONS) {
+      const nr = row + dr;
+      const nc = col + dc;
+      if (!inBounds(size, nr, nc)) continue;
+
+      const next = idx(size, nr, nc);
+      if (seen[next] === 1 || modules[next] === 1) continue;
+
+      seen[next] = 1;
+      queue.push(next);
+    }
+  }
+
+  return seen;
+}
+
+/** Whether the exit is still on foot from the start. */
+function reaches(size: number, modules: Uint8Array, from: number, to: number): boolean {
+  return reachableFrom(size, modules, from)[to] === 1;
+}
+
+export interface ModifyResult {
+  /** The altered matrix. */
+  readonly modules: Uint8Array;
+  /** Mask of the cells this pass changed. */
+  readonly changed: Uint8Array;
+  readonly changedCount: number;
+}
+
+/**
+ * Spend spare budget opening modules alongside the route.
+ *
+ * Candidates are dark modules that touch somewhere the player can already
+ * stand, so every opening extends the playable space rather than hollowing out
+ * a pocket nobody will ever see. The effect is branches, loops and more
+ * winning routes — which is what makes a move budget forgiving.
+ */
+export function widenMaze(
+  size: number,
+  modules: Uint8Array,
+  reserved: Uint8Array,
+  start: Point,
+  quota: number,
+  random: () => number,
+): ModifyResult {
+  const changed = new Uint8Array(modules.length);
+  if (quota <= 0) return { modules, changed, changedCount: 0 };
+
+  const reachable = reachableFrom(size, modules, idx(size, start.row, start.col));
+  const candidates: number[] = [];
+
+  for (let cell = 0; cell < modules.length; cell++) {
+    if (modules[cell] === 0 || reserved[cell] === 1) continue;
+
+    const row = (cell / size) | 0;
+    const col = cell % size;
+
+    for (const [dr, dc] of DIRECTIONS) {
+      const nr = row + dr;
+      const nc = col + dc;
+      if (!inBounds(size, nr, nc)) continue;
+      if (reachable[idx(size, nr, nc)] === 1) {
+        candidates.push(cell);
+        break;
+      }
+    }
+  }
+
+  shuffle(candidates, random);
+
+  const widened = Uint8Array.from(modules);
+  let changedCount = 0;
+
+  for (const cell of candidates) {
+    if (changedCount >= quota) break;
+    widened[cell] = 0;
+    changed[cell] = 1;
+    changedCount++;
+  }
+
+  return { modules: widened, changed, changedCount };
+}
+
+/**
+ * Spend spare budget filling light modules in.
+ *
+ * The error-correction budget is symmetric: a decoder cares how many modules
+ * disagree with the encoded symbol, not which direction they moved. So the
+ * same allowance that opens a wall can raise one, and raising walls is the
+ * only way to *remove* alternatives from a board.
+ *
+ * Two rules keep it safe. Function modules are never touched — filling a light
+ * cell of a timing pattern corrupts a structure the decoder navigates by,
+ * which error correction does not cover. And every candidate is tried against
+ * a connectivity check before it is kept, so the exit can never be walled off.
+ */
+export function plugMaze(
+  size: number,
+  modules: Uint8Array,
+  reserved: Uint8Array,
+  carved: Uint8Array,
+  start: Point,
+  end: Point,
+  quota: number,
+  random: () => number,
+): ModifyResult {
+  const changed = new Uint8Array(modules.length);
+  if (quota <= 0) return { modules, changed, changedCount: 0 };
+
+  const startCell = idx(size, start.row, start.col);
+  const endCell = idx(size, end.row, end.col);
+  const candidates: number[] = [];
+
+  for (let cell = 0; cell < modules.length; cell++) {
+    if (modules[cell] === 1 || reserved[cell] === 1) continue;
+    if (cell === startCell || cell === endCell) continue;
+    // Never undo the carver's work: that would spend the budget twice to end
+    // up where the symbol already was.
+    if (carved[cell] === 1) continue;
+    candidates.push(cell);
+  }
+
+  shuffle(candidates, random);
+
+  const plugged = Uint8Array.from(modules);
+  let changedCount = 0;
+
+  for (const cell of candidates) {
+    if (changedCount >= quota) break;
+
+    plugged[cell] = 1;
+    if (reaches(size, plugged, startCell, endCell)) {
+      changed[cell] = 1;
+      changedCount++;
+    } else {
+      plugged[cell] = 0;
+    }
+  }
+
+  return { modules: plugged, changed, changedCount };
 }

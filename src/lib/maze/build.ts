@@ -2,15 +2,34 @@ import { generateQrMatrix } from '../qr/generate';
 import { buildReservedMask, countCarvableModules } from '../qr/reserved';
 import { EC_DAMAGE_BUDGET, EC_LEVELS, type ErrorCorrectionLevel } from '../qr/types';
 import { verifyDecodes } from '../qr/verify';
+import { hashString, mulberry32 } from '../random';
 import { analyzeMaze } from './analyze';
-import { carveFromBorder, chooseExit } from './carve';
-import type { Maze } from './types';
+import {
+  carveFromBorder,
+  carveThroughWaypoints,
+  chooseExit,
+  plugMaze,
+  widenMaze,
+  type CarveResult,
+} from './carve';
+import {
+  CANONICAL_MIX,
+  DEFAULT_DIFFICULTY,
+  DIFFICULTY_CONFIG,
+  STRUCTURE_MINIMUM,
+  STRUCTURE_SAFETY,
+  STRUCTURE_TARGET,
+  moveBudget,
+  type Difficulty,
+} from './difficulty';
+import type { Maze, Point } from './types';
 
 /** Why a candidate error-correction level was rejected, if it was. */
 export type AttemptOutcome =
   | 'accepted'
   | 'no-corridor'
   | 'over-damage-budget'
+  | 'insufficient-headroom'
   | 'decode-failed'
   | 'unsolvable';
 
@@ -20,7 +39,8 @@ export interface MazeBuildAttempt {
   readonly version: number;
   readonly size: number;
   readonly carvedCount: number;
-  /** Carved modules as a fraction of the alterable (non-function) area. */
+  readonly pluggedCount: number;
+  /** Altered modules as a fraction of the alterable (non-function) area. */
   readonly damageRatio: number;
   readonly outcome: AttemptOutcome;
 }
@@ -29,73 +49,226 @@ export type MazeBuildResult =
   | { readonly ok: true; readonly maze: Maze; readonly attempts: MazeBuildAttempt[] }
   | { readonly ok: false; readonly reason: string; readonly attempts: MazeBuildAttempt[] };
 
+/** Merge two change masks into a fresh one. */
+function union(left: Uint8Array, right: Uint8Array): Uint8Array {
+  const merged = Uint8Array.from(left);
+  for (let cell = 0; cell < merged.length; cell++) {
+    if (right[cell] === 1) merged[cell] = 1;
+  }
+  return merged;
+}
+
+/** How an allowance is split between opening walls and raising them. */
+interface EditMix {
+  readonly widen: number;
+  readonly plug: number;
+}
+
+/** A board with the tier's structural edits applied at some scale. */
+interface Structured {
+  readonly modules: Uint8Array;
+  readonly carved: Uint8Array;
+  readonly carvedCount: number;
+  readonly plugged: Uint8Array;
+  readonly pluggedCount: number;
+}
+
 /**
- * Build the cheapest playable maze for `url`.
+ * Apply `scale` structural edits, split between widening and plugging.
+ *
+ * The PRNG is rebuilt from the same seed on every call, so the candidate order
+ * is fixed and a larger scale opens a superset of a smaller one. That is what
+ * makes the result monotonic enough to binary-search.
+ */
+function applyStructure(
+  size: number,
+  reserved: Uint8Array,
+  carve: CarveResult,
+  start: Point,
+  end: Point,
+  mix: EditMix,
+  scale: number,
+  seed: number,
+): Structured {
+  const widened = widenMaze(
+    size,
+    carve.modules,
+    reserved,
+    start,
+    Math.round(scale * mix.widen),
+    mulberry32(seed),
+  );
+  const opened = union(carve.carved, widened.changed);
+
+  const filled = plugMaze(
+    size,
+    widened.modules,
+    reserved,
+    opened,
+    start,
+    end,
+    Math.round(scale * mix.plug),
+    mulberry32(seed ^ 0x9e3779b9),
+  );
+
+  return {
+    modules: filled.modules,
+    carved: opened,
+    carvedCount: carve.carvedCount + widened.changedCount,
+    plugged: filled.changed,
+    pluggedCount: filled.changedCount,
+  };
+}
+
+/**
+ * Build the cheapest playable maze for `url` at the requested difficulty.
  *
  * Error-correction level is escalated L -> M -> Q -> H and the first level that
  * satisfies every requirement wins. Raising the level does not itself open
  * routes — QR data masking is effectively random, so a raw symbol almost never
  * contains a natural corridor. What a higher level buys is a larger *damage
- * budget*, i.e. permission to carve more modules and still decode.
+ * budget*, i.e. permission to alter more modules and still decode.
  *
  * A level is accepted only when all of the following hold:
  *  1. a corridor exists from the exit to some cell on the top or left border,
  *     without darkening or opening a function pattern;
- *  2. the carved modules stay inside that level's nominal damage budget;
- *  3. a real decoder still reads the carved matrix back as `url`;
- *  4. the finished maze is actually solvable.
+ *  2. the corridor stays inside that level's nominal damage budget;
+ *  3. the level has enough measured headroom for the structural edits;
+ *  4. a real decoder still reads the finished matrix back as `url`;
+ *  5. the maze is actually solvable.
+ *
+ * Difficulty is applied *inside* that envelope, never around it. The corridor
+ * is bent through waypoints, then whatever budget is left over is split
+ * between widening and plugging — so a harder board spends the symbol's spare
+ * error correction rather than asking for more of it.
  */
-export function buildMaze(url: string, levels = EC_LEVELS): MazeBuildResult {
+export function buildMaze(
+  url: string,
+  difficulty: Difficulty = DEFAULT_DIFFICULTY,
+  levels = EC_LEVELS,
+): MazeBuildResult {
   const attempts: MazeBuildAttempt[] = [];
+  const config = DIFFICULTY_CONFIG[difficulty];
+
+  // Fixed once, from the smallest symbol that can hold the payload. Deriving
+  // it per level would raise the bar every time we escalated to clear it, so
+  // the search could chase its own target all the way to H.
+  const base = generateQrMatrix(url, levels[0]);
+  const baseCarvable = countCarvableModules(buildReservedMask(base.size, base.version));
+  const want = Math.max(STRUCTURE_MINIMUM, Math.ceil(baseCarvable * STRUCTURE_TARGET));
 
   for (const level of levels) {
     const qr = generateQrMatrix(url, level);
     const reserved = buildReservedMask(qr.size, qr.version);
     const carvable = countCarvableModules(reserved);
+    const maxDamage = Math.floor(carvable * EC_DAMAGE_BUDGET[level]);
 
-    const record = (
-      outcome: AttemptOutcome,
-      carvedCount: number,
-    ): MazeBuildAttempt => {
-      const attempt: MazeBuildAttempt = {
+    const record = (outcome: AttemptOutcome, carved: number, plugs: number): void => {
+      attempts.push({
         level,
         version: qr.version,
         size: qr.size,
-        carvedCount,
-        damageRatio: carvable === 0 ? 1 : carvedCount / carvable,
+        carvedCount: carved,
+        pluggedCount: plugs,
+        damageRatio: carvable === 0 ? 1 : (carved + plugs) / carvable,
         outcome,
-      };
-      attempts.push(attempt);
-      return attempt;
+      });
     };
 
     const end = chooseExit(qr.size);
-    const carve = carveFromBorder(qr.size, qr.modules, reserved, end);
+
+    // One direct carve settles where the start goes. Its route is discarded
+    // when waypoints are in play, but the border anchor it found still stands:
+    // reachability does not change when extra modules are opened.
+    const anchor = carveFromBorder(qr.size, qr.modules, reserved, end);
+    if (!anchor) {
+      record('no-corridor', 0, 0);
+      continue;
+    }
+    const start = anchor.start;
+
+    // Drop a waypoint and try again before escalating the level. A cheaper
+    // route at the same level keeps the symbol the size the player expects;
+    // escalating would grow it and change the board entirely.
+    let carve: CarveResult | null = null;
+    for (let waypoints = config.waypoints; waypoints >= 0 && !carve; waypoints--) {
+      const candidate =
+        waypoints === 0
+          ? anchor
+          : carveThroughWaypoints(qr.size, qr.modules, reserved, start, end, waypoints);
+      if (candidate && candidate.carvedCount <= maxDamage) carve = candidate;
+    }
+
     if (!carve) {
-      record('no-corridor', 0);
+      record('over-damage-budget', anchor.carvedCount, 0);
       continue;
     }
 
-    const { start } = carve;
-
-    const damageRatio = carvable === 0 ? 1 : carve.carvedCount / carvable;
-    if (damageRatio > EC_DAMAGE_BUDGET[level]) {
-      record('over-damage-budget', carve.carvedCount);
-      continue;
-    }
-
+    // The corridor alone must survive a decode before anything is built on it.
     if (!verifyDecodes(carve.modules, qr.size, url)) {
-      record('decode-failed', carve.carvedCount);
+      record('decode-failed', carve.carvedCount, 0);
       continue;
     }
 
-    const analysis = analyzeMaze(qr.size, carve.modules, start, end);
-    if (!analysis.solvable) {
-      record('unsolvable', carve.carvedCount);
+    // Seeded from the URL and level only. Fixing it makes a link rebuild the
+    // same board every time, which a shared play link depends on. Leaving the
+    // tier out of it does two further things: the level measured below comes
+    // out the same whichever tier asked, so difficulty never resizes the code;
+    // and because the candidate order is shared, Easy's extra openings are a
+    // superset of Normal's — the tiers read as one maze at different
+    // generosity rather than four unrelated boards.
+    const seed = hashString(`${url}|${level}`);
+
+    // Measure, do not estimate. A percentage-of-modules budget badly
+    // overstates what scattered edits cost: Reed-Solomon repairs whole
+    // codewords, so eight modules spread across the symbol can spend eight
+    // times what eight adjacent ones do. The only trustworthy answer comes
+    // from running a real decoder, and at a few milliseconds a go we can
+    // afford to bisect for it.
+    const decodes = (scale: number): boolean =>
+      verifyDecodes(
+        applyStructure(qr.size, reserved, carve, start, end, CANONICAL_MIX, scale, seed)
+          .modules,
+        qr.size,
+        url,
+      );
+
+    let low = 0;
+    let high = Math.ceil(want / STRUCTURE_SAFETY) + 1;
+    while (low + 1 < high) {
+      const mid = (low + high) >> 1;
+      if (decodes(mid)) low = mid;
+      else high = mid;
+    }
+
+    const spend = Math.min(want, Math.floor(low * STRUCTURE_SAFETY));
+    const structured = applyStructure(
+      qr.size, reserved, carve, start, end, config, spend, seed,
+    );
+
+    // Short of what the tier asked for: a denser symbol has more error
+    // correction to lend, so try the next level before settling.
+    const lastLevel = level === levels[levels.length - 1];
+    if (spend < want && !lastLevel) {
+      record('insufficient-headroom', structured.carvedCount, structured.pluggedCount);
       continue;
     }
 
-    record('accepted', carve.carvedCount);
+    const { modules, carved: carvedMask, carvedCount, plugged: pluggedMask, pluggedCount } =
+      structured;
+
+    if (!verifyDecodes(modules, qr.size, url)) {
+      record('decode-failed', carvedCount, pluggedCount);
+      continue;
+    }
+
+    const analysis = analyzeMaze(qr.size, modules, start, end);
+    if (!analysis.solvable || analysis.shortestLength === null) {
+      record('unsolvable', carvedCount, pluggedCount);
+      continue;
+    }
+
+    record('accepted', carvedCount, pluggedCount);
 
     return {
       ok: true,
@@ -105,13 +278,17 @@ export function buildMaze(url: string, levels = EC_LEVELS): MazeBuildResult {
         version: qr.version,
         level,
         url,
-        modules: carve.modules,
+        modules,
         reserved,
-        carved: carve.carved,
-        carvedCount: carve.carvedCount,
+        carved: carvedMask,
+        carvedCount,
+        plugged: pluggedMask,
+        pluggedCount,
         start,
         end,
         analysis,
+        difficulty,
+        moveBudget: moveBudget(analysis.shortestLength, difficulty),
       },
     };
   }

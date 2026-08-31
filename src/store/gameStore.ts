@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { buildMaze, type MazeBuildAttempt } from '../lib/maze/build';
+import { DEFAULT_DIFFICULTY, type Difficulty } from '../lib/maze/difficulty';
 import type { Maze, Point } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
 
@@ -16,6 +17,8 @@ export type GameStatus = 'idle' | 'building' | 'ready' | 'error';
 
 export interface GameState {
   readonly url: string;
+  /** Tier the next build will use. Changing it does not rebuild on its own. */
+  readonly difficulty: Difficulty;
   readonly status: GameStatus;
   readonly error: string | null;
   readonly maze: Maze | null;
@@ -29,6 +32,8 @@ export interface GameState {
   readonly player: Point;
   readonly moves: number;
   readonly won: boolean;
+  /** Set when the move budget runs out before the exit is reached. */
+  readonly lost: boolean;
   readonly cameraMode: CameraMode;
 
   /**
@@ -38,6 +43,7 @@ export interface GameState {
    */
   readonly scanCardOpen: boolean;
 
+  setDifficulty: (difficulty: Difficulty) => void;
   /** Encode `url`, carve a maze from it and load it as the active level. */
   buildFromUrl: (url: string) => void;
   /** Attempt a one-cell orthogonal move; ignored when blocked or finished. */
@@ -70,6 +76,7 @@ let buildSequence = 0;
 
 export const useGameStore = create<GameState>((set, get) => ({
   url: 'https://www.linkedin.com/in/amirhosein-duzandeh-zenoozi/',
+  difficulty: DEFAULT_DIFFICULTY,
   status: 'idle',
   error: null,
   maze: null,
@@ -81,8 +88,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   player: ORIGIN,
   moves: 0,
   won: false,
+  lost: false,
   cameraMode: 'gameplay',
   scanCardOpen: false,
+
+  setDifficulty: (difficulty) => set({ difficulty }),
 
   buildFromUrl: (url) => {
     const trimmed = url.trim();
@@ -112,7 +122,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       let result;
       try {
-        result = buildMaze(trimmed);
+        result = buildMaze(trimmed, get().difficulty);
       } catch (cause) {
         set({
           status: 'error',
@@ -141,6 +151,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           player: maze.start,
           moves: 0,
           won: false,
+          lost: false,
           cameraMode: 'gameplay',
           scanCardOpen: false,
         });
@@ -149,26 +160,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   movePlayer: (deltaRow, deltaCol) => {
-    const { maze, player, won } = get();
-    if (!maze || won) return;
+    const { maze, player, won, lost } = get();
+    if (!maze || won || lost) return;
 
     const row = player.row + deltaRow;
     const col = player.col + deltaCol;
     if (row < 0 || col < 0 || row >= maze.size || col >= maze.size) return;
 
     // Walkability is decided purely by the module colour: light modules are
-    // corridors, dark modules are walls.
+    // corridors, dark modules are walls. A move into a wall is refused rather
+    // than charged, so bumping around to feel out the maze is free.
     if (maze.modules[idx(maze.size, row, col)] === 1) return;
 
+    const moves = get().moves + 1;
     const reachedExit = row === maze.end.row && col === maze.end.col;
 
+    // The win is settled before the budget is. Spending the final move to
+    // land on the exit is a win, not a loss on a technicality.
     // Winning deliberately leaves the camera alone. The floating badge is
     // already scannable at any moment, so yanking the view to top-down would
     // interrupt the win without offering anything the player cannot already do.
     set({
       player: { row, col },
-      moves: get().moves + 1,
+      moves,
       won: reachedExit,
+      lost: !reachedExit && moves >= maze.moveBudget,
     });
   },
 
@@ -179,6 +195,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       player: maze.start,
       moves: 0,
       won: false,
+      lost: false,
       cameraMode: 'gameplay',
       scanCardOpen: false,
     });
@@ -195,6 +212,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       player: ORIGIN,
       moves: 0,
       won: false,
+      lost: false,
       cameraMode: 'gameplay',
       scanCardOpen: false,
     });

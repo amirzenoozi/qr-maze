@@ -1,4 +1,5 @@
 import type { ErrorCorrectionLevel } from '../qr/types';
+import type { Difficulty } from './difficulty';
 
 /** A cell coordinate inside the module matrix. */
 export interface Point {
@@ -53,7 +54,15 @@ export interface Maze {
   readonly carved: Uint8Array;
   /** Number of modules the carver had to open. */
   readonly carvedCount: number;
+  /** Row-major mask: `1` = light module filled in to prune a route. */
+  readonly plugged: Uint8Array;
+  /** Number of modules filled in. Counts against the same damage budget. */
+  readonly pluggedCount: number;
   readonly start: Point;
   readonly end: Point;
   readonly analysis: MazeAnalysis;
+  /** The tier this board was generated for. */
+  readonly difficulty: Difficulty;
+  /** Moves allowed before the run is lost. */
+  readonly moveBudget: number;
 }
