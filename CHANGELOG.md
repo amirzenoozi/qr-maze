@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.2] - 2026-08-31
+
+### Changed
+
+- Play links carry the URL in a `?url=` parameter again. The fragment form
+  saved four characters, but on every URL measured that saving landed inside
+  the same QR version, so it bought nothing a scanner could see while giving
+  up the one part of an address that survives being pasted, redirected and
+  forwarded. The compact encoding stays: a typical link is 54 characters
+  against the 68 of a plainly escaped one. Fragment links keep working.
+
 ## [1.2.1] - 2026-08-31
 
 ### Changed
@@ -140,7 +151,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.2...HEAD
+[1.2.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.0.1...v1.1.0
