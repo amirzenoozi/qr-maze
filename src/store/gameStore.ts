@@ -34,6 +34,14 @@ export interface GameState {
   readonly won: boolean;
   /** Set when the move budget runs out before the exit is reached. */
   readonly lost: boolean;
+  /**
+   * Retries left on the current board.
+   *
+   * Nothing in the maze can hurt the player, so a life is not damage: it is
+   * the right to start this board over. The first attempt is free and every
+   * restart after that spends one, whatever prompted it.
+   */
+  readonly lives: number;
   readonly cameraMode: CameraMode;
 
   /**
@@ -48,7 +56,7 @@ export interface GameState {
   buildFromUrl: (url: string) => void;
   /** Attempt a one-cell orthogonal move; ignored when blocked or finished. */
   movePlayer: (deltaRow: number, deltaCol: number) => void;
-  /** Return the player to the start without rebuilding the maze. */
+  /** Spend a life to put the player back at the start of the same board. */
   restart: () => void;
   /** Abandon the current maze and go back to the URL entry screen. */
   returnToStart: () => void;
@@ -60,6 +68,16 @@ export interface GameState {
 }
 
 const ORIGIN: Point = { row: 0, col: 0 };
+
+/**
+ * Retries granted per URL.
+ *
+ * Three hearts on top of the free first attempt, so a board is worth four
+ * plays in total. Charging *every* restart — mid-run, after a win, after a
+ * loss — is what makes the counter mean something: if only a loss cost a
+ * life, pressing restart one move before the budget expired would dodge it.
+ */
+export const LIVES_PER_URL = 3;
 
 /**
  * The loading screen is deliberately held open for 5-7 seconds.
@@ -89,6 +107,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   moves: 0,
   won: false,
   lost: false,
+  lives: LIVES_PER_URL,
   cameraMode: 'gameplay',
   scanCardOpen: false,
 
@@ -152,6 +171,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           moves: 0,
           won: false,
           lost: false,
+          lives: LIVES_PER_URL,
           cameraMode: 'gameplay',
           scanCardOpen: false,
         });
@@ -189,13 +209,15 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   restart: () => {
-    const { maze } = get();
-    if (!maze) return;
+    const { maze, lives } = get();
+    // Out of retries is the end of the board, so the only way on is a new URL.
+    if (!maze || lives <= 0) return;
     set({
       player: maze.start,
       moves: 0,
       won: false,
       lost: false,
+      lives: lives - 1,
       cameraMode: 'gameplay',
       scanCardOpen: false,
     });
@@ -213,6 +235,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       moves: 0,
       won: false,
       lost: false,
+      lives: LIVES_PER_URL,
       cameraMode: 'gameplay',
       scanCardOpen: false,
     });
