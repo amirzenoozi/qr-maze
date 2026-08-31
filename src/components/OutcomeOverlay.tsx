@@ -20,12 +20,13 @@ const LETTER_STAGGER_MS = 60;
  * around rather than being locked into a full-screen takeover.
  */
 export function OutcomeOverlay(): React.JSX.Element | null {
-  const { maze, moves, won, lost, restart, returnToStart, openScanCard } = useGameStore(
+  const { maze, moves, won, lost, lives, restart, returnToStart, openScanCard } = useGameStore(
     useShallow((state) => ({
       maze: state.maze,
       moves: state.moves,
       won: state.won,
       lost: state.lost,
+      lives: state.lives,
       restart: state.restart,
       returnToStart: state.returnToStart,
       openScanCard: state.openScanCard,
@@ -35,8 +36,11 @@ export function OutcomeOverlay(): React.JSX.Element | null {
   if (!maze || (!won && !lost)) return null;
 
   const best = maze.analysis.shortestLength;
+  const shortest = best === null ? '—' : numberFormat.format(best);
   const perfect = won && best !== null && moves === best;
-  const title = won ? 'SOLVED!' : 'OUT OF MOVES';
+  const spent = lives === 0;
+
+  const title = won ? 'SOLVED!' : spent ? 'GAME OVER' : 'OUT OF MOVES';
 
   const eyebrow = won
     ? perfect
@@ -47,12 +51,14 @@ export function OutcomeOverlay(): React.JSX.Element | null {
   const summary = won
     ? perfect
       ? `You walked the shortest route there is — ${numberFormat.format(moves)} moves.`
-      : `${numberFormat.format(moves)} moves. The shortest route is ${
-          best === null ? '—' : numberFormat.format(best)
-        }.`
-    : `You spent all ${numberFormat.format(maze.moveBudget)} moves. The shortest route is ${
-        best === null ? '—' : numberFormat.format(best)
-      } — the board is the same on a retry, so what you learned still counts.`;
+      : `${numberFormat.format(moves)} moves. The shortest route is ${shortest}.`
+    : spent
+      ? `All ${numberFormat.format(
+          maze.moveBudget,
+        )} moves and every retry are gone. The shortest route was ${shortest} — encode another URL for a fresh board.`
+      : `You spent all ${numberFormat.format(
+          maze.moveBudget,
+        )} moves. The shortest route is ${shortest} — the board is the same on a retry, so what you learned still counts.`;
 
   return (
     <div className="win">
@@ -83,14 +89,20 @@ export function OutcomeOverlay(): React.JSX.Element | null {
               Scan the code
             </button>
           )}
+          {!spent && (
+            <button
+              className={won ? 'button' : 'button button--primary'}
+              type="button"
+              onClick={restart}
+            >
+              {won ? 'Play again' : 'Try again'}
+            </button>
+          )}
           <button
-            className={won ? 'button' : 'button button--primary'}
+            className={spent ? 'button button--primary' : 'button'}
             type="button"
-            onClick={restart}
+            onClick={returnToStart}
           >
-            {won ? 'Play again' : 'Try again'}
-          </button>
-          <button className="button" type="button" onClick={returnToStart}>
             New URL
           </button>
         </div>

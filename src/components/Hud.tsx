@@ -1,7 +1,8 @@
 import { useShallow } from 'zustand/react/shallow';
 import { DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { ROUTE_COUNT_CAP } from '../lib/maze/types';
-import { useGameStore } from '../store/gameStore';
+import { LIVES_PER_URL, useGameStore } from '../store/gameStore';
+import { PixelHearts } from './PixelHearts';
 
 const numberFormat = new Intl.NumberFormat('en-US');
 
@@ -31,10 +32,11 @@ function Stat({ label, value, hint, urgent = false }: StatProps): React.JSX.Elem
  * screen — where the player actually is — stays clear.
  */
 export function Hud(): React.JSX.Element | null {
-  const { maze, moves, restart, returnToStart } = useGameStore(
+  const { maze, moves, lives, restart, returnToStart } = useGameStore(
     useShallow((state) => ({
       maze: state.maze,
       moves: state.moves,
+      lives: state.lives,
       restart: state.restart,
       returnToStart: state.returnToStart,
     })),
@@ -69,6 +71,13 @@ export function Hud(): React.JSX.Element | null {
           value={routes}
           hint="Distinct shortest paths from start to exit"
         />
+        <div
+          className={lives === 0 ? 'stat stat--urgent' : 'stat'}
+          title="Restarting this board spends one"
+        >
+          <span className="stat__label">Retries</span>
+          <PixelHearts total={LIVES_PER_URL} left={lives} />
+        </div>
       </div>
 
       <div className="hud__controls">
@@ -88,7 +97,7 @@ export function Hud(): React.JSX.Element | null {
         </ul>
 
         <div className="hud__actions">
-          <button className="button" type="button" onClick={restart}>
+          <button className="button" type="button" onClick={restart} disabled={lives === 0}>
             Restart
           </button>
           <button className="button" type="button" onClick={returnToStart}>

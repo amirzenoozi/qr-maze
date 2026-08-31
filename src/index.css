@@ -401,6 +401,41 @@ kbd {
   color: var(--danger);
 }
 
+/* Retries. Sized off the stat value so the hearts sit on the same baseline
+   as the numbers beside them. */
+.hearts {
+  display: flex;
+  gap: 4px;
+  margin-top: 7px;
+}
+
+.heart {
+  width: 16px;
+  height: 14px;
+  fill: var(--danger);
+  /* The shape is drawn on an integer grid; smoothing it would round the very
+     corners that make it read as pixel art. */
+  shape-rendering: crispedges;
+}
+
+.heart--spent {
+  fill: var(--panel-hi);
+  animation: heart-out 420ms steps(4, end) both;
+}
+
+/* Stepped rather than smooth, to match the rest of the pixel chrome. */
+@keyframes heart-out {
+  0% {
+    fill: var(--danger);
+    transform: scale(1.35);
+  }
+
+  100% {
+    fill: var(--panel-hi);
+    transform: scale(1);
+  }
+}
+
 .hud__actions {
   display: flex;
   flex-wrap: wrap;
@@ -703,6 +738,7 @@ kbd {
 @media (prefers-reduced-motion: reduce) {
   .win__panel,
   .win__letter,
+  .heart--spent,
   .scan-backdrop {
     animation: none;
   }
