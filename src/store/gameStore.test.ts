@@ -108,13 +108,52 @@ describe('lives', () => {
     expect(useGameStore.getState().lives).toBe(LIVES_PER_URL);
   });
 
-  it('refills on returning to the entry screen', async () => {
+  it('survives a trip to the entry screen, so the board comes back too', async () => {
     await build();
+    const first = useGameStore.getState().maze?.modules.join('');
     useGameStore.getState().restart();
 
     useGameStore.getState().returnToStart();
-
     expect(useGameStore.getState().status).toBe('idle');
+    // Hearts belong to a board, and this cleared the board. Refilling here
+    // would lose the one signal that says the maze has been used up.
+    expect(useGameStore.getState().lives).toBe(LIVES_PER_URL - 1);
+
+    await build();
+
+    expect(useGameStore.getState().lives).toBe(LIVES_PER_URL);
+    expect(useGameStore.getState().maze?.modules.join('')).toBe(first);
+  });
+});
+
+describe('board variant', () => {
+  it('keeps the same maze while the player still has hearts', async () => {
+    await build();
+    const first = useGameStore.getState().maze?.modules.join('');
+
+    useGameStore.getState().restart();
+    useGameStore.getState().returnToStart();
+    await build();
+
+    expect(useGameStore.getState().maze?.modules.join('')).toBe(first);
+  });
+
+  it('re-routes once the hearts are gone', async () => {
+    await build();
+    const first = useGameStore.getState().maze;
+
+    for (let i = 0; i < LIVES_PER_URL; i++) useGameStore.getState().restart();
+    expect(useGameStore.getState().lives).toBe(0);
+
+    // The clock is the variant, so it has to actually move.
+    await vi.advanceTimersByTimeAsync(1000);
+    await build();
+    const second = useGameStore.getState().maze;
+
+    expect(second?.modules.join('')).not.toBe(first?.modules.join(''));
+    // A new route through the same code, not a differently sized one.
+    expect(second?.size).toBe(first?.size);
+    expect(second?.level).toBe(first?.level);
     expect(useGameStore.getState().lives).toBe(LIVES_PER_URL);
   });
 });

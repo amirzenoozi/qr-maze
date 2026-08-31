@@ -42,6 +42,15 @@ export interface GameState {
    * restart after that spends one, whatever prompted it.
    */
   readonly lives: number;
+  /**
+   * Which of the equally cheap routes through the code this board takes.
+   *
+   * A clock reading, so nothing has to be stored to remember what has been
+   * played. It survives as long as the player has hearts left on the board:
+   * leaving for the entry screen and coming back gives you your maze, not a
+   * new one. Only an exhausted board is re-rolled.
+   */
+  readonly variant: number;
   readonly cameraMode: CameraMode;
 
   /**
@@ -108,6 +117,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   won: false,
   lost: false,
   lives: LIVES_PER_URL,
+  variant: Date.now(),
   cameraMode: 'gameplay',
   scanCardOpen: false,
 
@@ -124,11 +134,19 @@ export const useGameStore = create<GameState>((set, get) => ({
     const duration = BUILD_HOLD_MIN_MS + Math.random() * BUILD_HOLD_JITTER_MS;
     const startedAt = Date.now();
 
+    // Re-roll the route only for a board the player has run out of hearts on.
+    // Any other rebuild — a first visit, a change of tier, walking away from a
+    // board you still have attempts on — keeps the maze you were given, so the
+    // layout you learned is still there when you come back.
+    const exhausted = get().lives <= 0;
+    const variant = exhausted ? startedAt : get().variant;
+
     set({
       url: trimmed,
       status: 'building',
       error: null,
       maze: null,
+      variant,
       buildStartedAt: startedAt,
       buildDuration: duration,
     });
@@ -141,10 +159,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       let result;
       try {
-        // The clock is the variant. Re-entering a URL you have already
-        // exhausted gives a different route through the same code, and
-        // nothing has to be stored to remember what you have played.
-        result = buildMaze(trimmed, get().difficulty, startedAt);
+        result = buildMaze(trimmed, get().difficulty, variant);
       } catch (cause) {
         set({
           status: 'error',
@@ -238,7 +253,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       moves: 0,
       won: false,
       lost: false,
-      lives: LIVES_PER_URL,
+      // Hearts belong to a board, and this clears the board. Refilling here
+      // would erase the one signal that says the last maze was used up, so
+      // rebuilding the same link would hand back the board that just ended.
       cameraMode: 'gameplay',
       scanCardOpen: false,
     });
