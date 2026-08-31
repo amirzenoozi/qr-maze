@@ -8,21 +8,22 @@
  * drops someone straight into the same maze.
  */
 
-/**
- * Legacy query parameter. Links minted before the fragment encoding still
- * carry it, and they keep working.
- */
+/** The query parameter carrying the shared URL. */
 export const PLAY_PARAM = 'url';
 
 /**
- * Characters a URI fragment accepts verbatim: `pchar / "/" / "?"`, minus `%`
- * (the escape marker itself) and `#` (which would end the fragment).
+ * Characters a query value keeps verbatim.
  *
- * `encodeURIComponent` escapes most of these, and every escape costs two extra
- * characters in a payload whose length decides the QR version. Keeping `:` and
- * `/` literal is worth roughly a whole version on a short URL.
+ * RFC 3986 allows `pchar / "/" / "?"` in a query, but four of those cannot
+ * survive here: `&` and `=` split parameters, `+` decodes as a space, and `%`
+ * is the escape marker itself. `#` would end the query, `'` and `;` are
+ * escaped by browsers or split by older parsers, so all of them go too.
+ *
+ * What remains matters because `encodeURIComponent` escapes `:` and `/`, and
+ * every escape costs two extra characters in a payload whose length decides
+ * the QR version.
  */
-const FRAGMENT_SAFE = /[A-Za-z0-9\-._~:/?@!$&'()*+,;=]/;
+const QUERY_SAFE = /[A-Za-z0-9\-._~:/?@!$()*,]/;
 
 /** Marks a payload whose `http://` scheme was stripped. */
 const HTTP_MARKER = '!';
@@ -31,11 +32,11 @@ const HTTP_MARKER = '!';
 const VERBATIM_MARKER = '~';
 
 /**
- * Pack a URL into the smallest fragment that still round-trips.
+ * Pack a URL into the smallest parameter value that still round-trips.
  *
  * Two savings, both aimed at the QR version rather than at looking tidy:
  * `https://` is dropped because it is the overwhelmingly common case, and
- * escaping is limited to the two characters that genuinely cannot appear.
+ * escaping is limited to the characters that genuinely cannot appear.
  */
 export function encodeShareBody(url: string): string {
   let body: string;
@@ -50,7 +51,7 @@ export function encodeShareBody(url: string): string {
 
   let packed = '';
   for (const character of body) {
-    packed += FRAGMENT_SAFE.test(character) ? character : encodeURIComponent(character);
+    packed += QUERY_SAFE.test(character) ? character : encodeURIComponent(character);
   }
 
   return packed;
@@ -62,7 +63,7 @@ export function decodeShareBody(body: string): string | null {
   try {
     decoded = decodeURIComponent(body);
   } catch {
-    // A malformed escape sequence; treat the fragment as opaque rubbish.
+    // A malformed escape sequence; treat the value as opaque rubbish.
     return null;
   }
 
@@ -71,6 +72,10 @@ export function decodeShareBody(body: string): string | null {
     url = decoded.slice(VERBATIM_MARKER.length);
   } else if (decoded.startsWith(HTTP_MARKER)) {
     url = 'http://' + decoded.slice(HTTP_MARKER.length);
+  } else if (decoded.startsWith('https://') || decoded.startsWith('http://')) {
+    // Links minted before the scheme was stripped escaped the whole URL, so
+    // the scheme is already here. Prepending another would corrupt them.
+    url = decoded;
   } else {
     url = 'https://' + decoded;
   }
@@ -86,29 +91,47 @@ export function decodeShareBody(body: string): string | null {
  * different deployment, so the link follows the build rather than a hardcoded
  * host.
  *
- * The URL rides in the fragment rather than a query parameter. A fragment
- * needs no `?url=` prefix, tolerates `:` and `/` unescaped, and never reaches
- * a server that has no use for it.
+ * The URL rides in a query parameter. A fragment would be a few characters
+ * shorter, but fragments are the part of an address that link handlers,
+ * messaging apps and redirects routinely drop, and a play link that loses its
+ * payload in transit is worse than a play link one QR version larger.
+ *
+ * The value is appended rather than set through `URLSearchParams`, which would
+ * escape `:` and `/` into six characters apiece.
  */
 export function buildPlayLink(url: string): string {
   const link = new URL(import.meta.env.BASE_URL, window.location.origin);
-  return `${link.toString()}#${encodeShareBody(url)}`;
+  return `${link.toString()}?${PLAY_PARAM}=${encodeShareBody(url)}`;
+}
+
+/**
+ * Pull one parameter out of a query string without decoding it.
+ *
+ * `URLSearchParams` would percent-decode the value, and `decodeShareBody`
+ * decodes as well, so a URL containing a literal `%` would be mangled by the
+ * second pass.
+ */
+function rawQueryValue(search: string, name: string): string | null {
+  for (const pair of search.replace(/^\?/, '').split('&')) {
+    const split = pair.indexOf('=');
+    if (split !== -1 && pair.slice(0, split) === name) {
+      return pair.slice(split + 1);
+    }
+  }
+
+  return null;
 }
 
 /** Read a preloaded URL out of the current address, if there is one. */
 export function readPlayLink(): string | null {
+  const parameter = rawQueryValue(window.location.search, PLAY_PARAM);
+  if (parameter !== null && parameter !== '') {
+    return decodeShareBody(parameter);
+  }
+
+  // Links minted while the payload lived in the fragment still work.
   const fragment = window.location.hash.slice(1);
-  if (fragment !== '') {
-    return decodeShareBody(fragment);
-  }
-
-  const legacy = new URLSearchParams(window.location.search).get(PLAY_PARAM);
-  if (legacy === null) {
-    return null;
-  }
-
-  const trimmed = legacy.trim();
-  return trimmed === '' ? null : trimmed;
+  return fragment === '' ? null : decodeShareBody(fragment);
 }
 
 /**

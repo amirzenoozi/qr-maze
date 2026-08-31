@@ -126,7 +126,7 @@ Opening the scan card offers two codes:
 | Tab | Encodes | Scanning it |
 |-----|---------|-------------|
 | **Your code** | The URL you typed | Opens that URL |
-| **Play link** | `…/qr-maze/#<your URL>` | Opens this game with the same maze |
+| **Play link** | `…/qr-maze/?url=<your URL>` | Opens this game with the same maze |
 
 Both can be saved as a PNG with **Download**, or handed to the system share
 sheet with **Share** (which falls back to copying the link on desktop browsers
@@ -135,27 +135,32 @@ without `navigator.share`).
 The play link is a plain, uncarved code at error-correction level M — nothing
 is walked through it, so it spends no damage budget.
 
-#### Why the URL sits in the fragment
+#### How the play link stays short
 
 A play link has to carry the whole destination, and every character of it
-raises the QR version. Three things are dropped rather than encoded:
+raises the QR version. The URL sits in a `?url=` parameter — the part of an
+address that survives being pasted, redirected and forwarded, where a fragment
+is routinely dropped — but it is not escaped the obvious way. Two things are
+stripped rather than encoded:
 
-- **The `?url=` prefix.** The fragment needs no parameter name.
 - **The `https://` scheme.** Absent means `https://`, `!` means `http://`,
   `~` means the string had no scheme and is stored verbatim.
-- **Percent-escaping of `:` `/` `?` `&` `=`.** These are legal in a fragment.
+- **Escaping of `:` `/` `?` `@`.** These are legal in a query value.
   `encodeURIComponent` escapes them anyway, and each one costs two extra
-  characters.
+  characters. Only `&` `=` `+` `#` `%` and anything non-ASCII are escaped,
+  because those genuinely cannot survive in a parameter.
 
-| URL | Query form | Fragment form |
-|-----|-----------|---------------|
-| `https://example.com` | 68 chars, v5 | **50 chars, v4** |
-| `https://github.com/amirzenoozi/qr-maze` | 91 chars, v6 | **69 chars, v5** |
-| `https://shop.example.org/catalog?category=garden&sort=price&page=3` | 129 chars, v8 | **97 chars, v6** |
+| URL | `encodeURIComponent` | This encoding |
+|-----|----------------------|---------------|
+| `https://example.com` | 68 chars, v5 | **54 chars, v4** |
+| `https://github.com/amirzenoozi/qr-maze` | 91 chars, v6 | **73 chars, v5** |
+| `https://shop.example.org/catalog?category=garden&sort=price&page=3` | 129 chars, v8 | **111 chars, v7** |
 
-The fragment also never leaves the browser, so the address of someone's maze
-is not written into a server log. Links using the old `?url=` form are still
-read, so codes printed before this change keep working.
+Between v1.2.0 and v1.2.1 the payload lived in the fragment, which is four
+characters shorter still — but on every URL measured that saving lands inside
+the same QR version, so it bought nothing a scanner could see and cost the
+robustness of a query parameter. Fragment links from those versions are still
+read.
 
 There is no shorter option without giving something up. A hash or fingerprint
 is one-way by construction: turning `a7f3c1` back into a URL needs a table
