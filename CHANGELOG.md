@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Touch controls. Swipe to move one module on a phone or tablet, dominant axis
+  winning so a diagonal flick still resolves to a legal step. Deliberately one
+  cell per gesture rather than a drag: the board is a grid of single-module
+  corridors and the game only accepts whole-cell moves. The keyboard hints
+  hide themselves on a touch device and the swipe hint on a desktop.
+
+### Changed
+
+- Retries moved to the top-right corner, opposite the scan card, leaving the
+  numbers alone in the top-left.
+- A board's route is now held for as long as the player has hearts on it.
+  Leaving for the entry screen and coming back returns the same maze rather
+  than a new one, so a layout you have been learning survives the trip. Only
+  a board whose hearts are gone is re-rolled.
+- Hearts are no longer refilled on returning to the entry screen. They belong
+  to a board, and that screen has none; refilling there erased the one signal
+  saying the last maze had been used up.
+
 ## [1.5.0] - 2026-08-31
 
 ### Added

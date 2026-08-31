@@ -117,9 +117,10 @@ entirely determined by where the QR data happened to leave gaps.
 
 Enter a URL, wait out the loading screen, and walk.
 
-| Key | Action |
-|-----|--------|
+| Input | Action |
+|-------|--------|
 | `W` `A` `S` `D` or arrow keys | Move one module |
+| Swipe (touch) | Move one module |
 | `Space` | Open or close the enlarged scan card |
 | `C` | Toggle the flat top-down view |
 | `R` | Restart the current maze (spends a retry) |
@@ -139,9 +140,20 @@ could restart one move before the budget expired and never pay.
 When the hearts are gone the board is finished. The overlay drops its retry
 button and offers only a new URL, which deals a fresh set.
 
+On a phone or tablet, swipe to move — one module per gesture, dominant axis
+wins, so a diagonal flick still resolves to a legal step. It is deliberately
+not a drag: the board is a grid of single-module corridors and the game only
+accepts whole-cell moves, so gliding would have to invent an interpolation
+that does not exist. The keyboard hints hide themselves on a touch device and
+the swipe hint hides itself on a desktop.
+
 #### A rebuilt URL is a new maze
 
 Entering the same URL again does not hand back the board you just exhausted.
+
+The route is held for as long as you have hearts on it. Leaving for the entry
+screen and coming back gives you *your* maze — the layout you learned is still
+there. Only a board you have run out of hearts on is re-rolled.
 
 Most of this grid costs nothing to cross, so an enormous number of routes tie
 for cheapest and the search simply keeps whichever neighbour reached a cell
