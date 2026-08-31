@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Rendered demo footage. GitHub rejects any file over 100 MB, and a 4K capture
+# is far past that, so the video lives outside the repository.
+video
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
