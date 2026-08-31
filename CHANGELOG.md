@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-08-31
+
 ### Added
 
 - Re-entering a URL now builds a different maze from it. Nearly every cell in
@@ -221,7 +223,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.2...v1.3.0
 [1.2.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.2.1...v1.2.2
