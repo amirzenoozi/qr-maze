@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Re-entering a URL now builds a different maze from it. Nearly every cell in
+  this grid is free to cross, so a vast number of routes tie for cheapest and
+  the search keeps whichever neighbour arrived first; shuffling the order
+  neighbours are tried in picks a different route of the same minimal cost,
+  leaving the distances — and therefore the damage to the symbol — untouched.
+  The shuffle is seeded from the clock at build time, so nothing is stored to
+  remember what has already been played.
+
+### Changed
+
+- Retries moved to the top-left corner, larger and without a panel behind
+  them. They are read at a glance rather than parsed, unlike the numbers they
+  used to sit among.
+- The error-correction level is now probed against one canonical board that no
+  variant ever plays. Measuring each variant's own board let a URL sitting on
+  the boundary between two levels flip symbol size between plays, moving the
+  board size and the move count rather than only the route.
+- Absolute move budgets and reachable-cell counts no longer order strictly
+  across all four tiers. Each tier is measured on its own corridor now, so a
+  widened Easy board can offer a shorter best route than a plugged Hard one.
+  The guarantee each tier actually makes — its slack over the shortest route
+  on its own board — is unchanged, and Easy remains a superset of Normal.
+- A shared play link hands the recipient a different route through the same
+  code rather than a replay of the sender's board.
+
 ## [1.4.0] - 2026-08-31
 
 ### Added

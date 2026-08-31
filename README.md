@@ -139,6 +139,26 @@ could restart one move before the budget expired and never pay.
 When the hearts are gone the board is finished. The overlay drops its retry
 button and offers only a new URL, which deals a fresh set.
 
+#### A rebuilt URL is a new maze
+
+Entering the same URL again does not hand back the board you just exhausted.
+
+Most of this grid costs nothing to cross, so an enormous number of routes tie
+for cheapest and the search simply keeps whichever neighbour reached a cell
+first. Shuffling the order neighbours are tried in therefore picks a *different
+route of the same minimal cost* — the distances never move, so the corridor is
+still optimal and still damages the symbol by exactly as much. The shuffle is
+seeded from the clock at build time, which is why nothing has to be stored to
+remember what you have already played.
+
+The error-correction level is decided separately, against one canonical board
+that no variant ever plays. Without that split, a URL sitting on the boundary
+between two levels would flip symbol size between plays and change the move
+count along with the route.
+
+One consequence worth knowing: a shared play link now hands the recipient a
+different route through the same code, not a replay of your exact board.
+
 ### Difficulty
 
 Chosen under the URL box, before the build. Every tier reshapes the board, not
