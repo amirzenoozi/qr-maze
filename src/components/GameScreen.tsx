@@ -1,4 +1,5 @@
 import { useKeyboardControls } from '../hooks/useKeyboardControls';
+import { useTouchControls } from '../hooks/useTouchControls';
 import { useGameStore } from '../store/gameStore';
 import { Hud } from './Hud';
 import { ScanBadge } from './ScanBadge';
@@ -16,6 +17,7 @@ export function GameScreen(): React.JSX.Element | null {
   // Movement is suspended while the code is enlarged, so the player cannot
   // walk into a wall they cannot see. Space still works: it closes the card.
   useKeyboardControls(!scanCardOpen);
+  useTouchControls(!scanCardOpen);
 
   if (!maze) return null;
 
