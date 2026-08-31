@@ -344,9 +344,19 @@ kbd {
   image-rendering: pixelated;
 }
 
-.hud__stats {
+/* Retries lead the top-left corner, above the numbers. They are the one
+   readout that is read at a glance rather than parsed, so they get no panel
+   behind them and sit directly on the scene. */
+.hud__lives {
   position: absolute;
   top: 16px;
+  left: 16px;
+  z-index: 2;
+}
+
+.hud__stats {
+  position: absolute;
+  top: 62px;
   left: 16px;
   z-index: 2;
   max-width: min(420px, calc(100vw - 32px));
@@ -401,18 +411,18 @@ kbd {
   color: var(--danger);
 }
 
-/* Retries. Sized off the stat value so the hearts sit on the same baseline
-   as the numbers beside them. */
 .hearts {
   display: flex;
-  gap: 4px;
-  margin-top: 7px;
+  gap: 8px;
 }
 
 .heart {
-  width: 16px;
-  height: 14px;
+  width: 32px;
+  height: 28px;
   fill: var(--danger);
+  /* Standing on the scene rather than on a panel, so the shape carries its
+     own outline the way the pixel chrome elsewhere does. */
+  filter: drop-shadow(3px 3px 0 var(--shadow));
   /* The shape is drawn on an integer grid; smoothing it would round the very
      corners that make it read as pixel art. */
   shape-rendering: crispedges;

@@ -52,6 +52,10 @@ export function Hud(): React.JSX.Element | null {
 
   return (
     <>
+      <div className="hud__lives">
+        <PixelHearts total={LIVES_PER_URL} left={lives} />
+      </div>
+
       <div className="hud__stats">
         <Stat
           label="Moves left"
@@ -71,13 +75,6 @@ export function Hud(): React.JSX.Element | null {
           value={routes}
           hint="Distinct shortest paths from start to exit"
         />
-        <div
-          className={lives === 0 ? 'stat stat--urgent' : 'stat'}
-          title="Restarting this board spends one"
-        >
-          <span className="stat__label">Retries</span>
-          <PixelHearts total={LIVES_PER_URL} left={lives} />
-        </div>
       </div>
 
       <div className="hud__controls">
