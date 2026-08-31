@@ -3,7 +3,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { GameScreen } from './components/GameScreen';
 import { LoadingScreen } from './components/LoadingScreen';
 import { StartScreen } from './components/StartScreen';
-import { clearPlayLinkParam, readPlayLinkParam } from './lib/share';
+import { clearPlayLink, readPlayLink } from './lib/share';
 import { useGameStore } from './store/gameStore';
 
 /**
@@ -13,7 +13,7 @@ import { useGameStore } from './store/gameStore';
  */
 export default function App(): React.JSX.Element {
   const status = useGameStore((state) => state.status);
-  const shared = useRef(readPlayLinkParam());
+  const shared = useRef(readPlayLink());
 
   // Layout effect, not a plain one: a shared link should never flash the entry
   // screen before the build starts. Re-entry under StrictMode is harmless —
@@ -25,7 +25,7 @@ export default function App(): React.JSX.Element {
     }
 
     shared.current = null;
-    clearPlayLinkParam();
+    clearPlayLink();
     useGameStore.getState().buildFromUrl(url);
   }, []);
 

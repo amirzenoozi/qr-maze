@@ -8,8 +8,76 @@
  * drops someone straight into the same maze.
  */
 
-/** Query parameter that preloads a maze. */
+/**
+ * Legacy query parameter. Links minted before the fragment encoding still
+ * carry it, and they keep working.
+ */
 export const PLAY_PARAM = 'url';
+
+/**
+ * Characters a URI fragment accepts verbatim: `pchar / "/" / "?"`, minus `%`
+ * (the escape marker itself) and `#` (which would end the fragment).
+ *
+ * `encodeURIComponent` escapes most of these, and every escape costs two extra
+ * characters in a payload whose length decides the QR version. Keeping `:` and
+ * `/` literal is worth roughly a whole version on a short URL.
+ */
+const FRAGMENT_SAFE = /[A-Za-z0-9\-._~:/?@!$&'()*+,;=]/;
+
+/** Marks a payload whose `http://` scheme was stripped. */
+const HTTP_MARKER = '!';
+
+/** Marks a payload stored verbatim, because it had no scheme to strip. */
+const VERBATIM_MARKER = '~';
+
+/**
+ * Pack a URL into the smallest fragment that still round-trips.
+ *
+ * Two savings, both aimed at the QR version rather than at looking tidy:
+ * `https://` is dropped because it is the overwhelmingly common case, and
+ * escaping is limited to the two characters that genuinely cannot appear.
+ */
+export function encodeShareBody(url: string): string {
+  let body: string;
+  if (url.startsWith('https://')) {
+    body = url.slice('https://'.length);
+  } else if (url.startsWith('http://')) {
+    body = HTTP_MARKER + url.slice('http://'.length);
+  } else {
+    // No recognised scheme, so nothing can be inferred on the way back.
+    body = VERBATIM_MARKER + url;
+  }
+
+  let packed = '';
+  for (const character of body) {
+    packed += FRAGMENT_SAFE.test(character) ? character : encodeURIComponent(character);
+  }
+
+  return packed;
+}
+
+/** Reverse `encodeShareBody`. Returns null for a body that decodes to nothing. */
+export function decodeShareBody(body: string): string | null {
+  let decoded: string;
+  try {
+    decoded = decodeURIComponent(body);
+  } catch {
+    // A malformed escape sequence; treat the fragment as opaque rubbish.
+    return null;
+  }
+
+  let url: string;
+  if (decoded.startsWith(VERBATIM_MARKER)) {
+    url = decoded.slice(VERBATIM_MARKER.length);
+  } else if (decoded.startsWith(HTTP_MARKER)) {
+    url = 'http://' + decoded.slice(HTTP_MARKER.length);
+  } else {
+    url = 'https://' + decoded;
+  }
+
+  const trimmed = url.trim();
+  return trimmed === '' || trimmed === 'https://' ? null : trimmed;
+}
 
 /**
  * Build the link that reopens this app with `url` already loaded.
@@ -17,32 +85,41 @@ export const PLAY_PARAM = 'url';
  * `import.meta.env.BASE_URL` is `/qr-maze/` in production and `/` under a
  * different deployment, so the link follows the build rather than a hardcoded
  * host.
+ *
+ * The URL rides in the fragment rather than a query parameter. A fragment
+ * needs no `?url=` prefix, tolerates `:` and `/` unescaped, and never reaches
+ * a server that has no use for it.
  */
 export function buildPlayLink(url: string): string {
   const link = new URL(import.meta.env.BASE_URL, window.location.origin);
-  link.searchParams.set(PLAY_PARAM, url);
-  return link.toString();
+  return `${link.toString()}#${encodeShareBody(url)}`;
 }
 
 /** Read a preloaded URL out of the current address, if there is one. */
-export function readPlayLinkParam(): string | null {
-  const value = new URLSearchParams(window.location.search).get(PLAY_PARAM);
-  if (value === null) {
+export function readPlayLink(): string | null {
+  const fragment = window.location.hash.slice(1);
+  if (fragment !== '') {
+    return decodeShareBody(fragment);
+  }
+
+  const legacy = new URLSearchParams(window.location.search).get(PLAY_PARAM);
+  if (legacy === null) {
     return null;
   }
 
-  const trimmed = value.trim();
+  const trimmed = legacy.trim();
   return trimmed === '' ? null : trimmed;
 }
 
 /**
- * Drop the parameter once it has been consumed.
+ * Drop the shared URL once it has been consumed.
  *
  * Without this the address bar keeps pointing at someone else's maze, so
  * "New URL" followed by a refresh would silently replay the shared one.
  */
-export function clearPlayLinkParam(): void {
+export function clearPlayLink(): void {
   const next = new URL(window.location.href);
+  next.hash = '';
   next.searchParams.delete(PLAY_PARAM);
   window.history.replaceState(null, '', next.toString());
 }
