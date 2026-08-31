@@ -342,6 +342,8 @@ kbd {
   display: block;
   /* Upscale the low-resolution render without smoothing it. */
   image-rendering: pixelated;
+  /* Swipes over the board are moves, not scrolls or double-tap zooms. */
+  touch-action: none;
 }
 
 /* Retries lead the top-left corner, above the numbers. They are the one
@@ -350,13 +352,13 @@ kbd {
 .hud__lives {
   position: absolute;
   top: 16px;
-  left: 16px;
+  right: 16px;
   z-index: 2;
 }
 
 .hud__stats {
   position: absolute;
-  top: 62px;
+  top: 16px;
   left: 16px;
   z-index: 2;
   max-width: min(420px, calc(100vw - 32px));
@@ -450,6 +452,22 @@ kbd {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+/* Offer the control the device actually has. A phone has no keys to press and
+   a desktop has nothing to swipe, so each hides the other's instructions. */
+.hud__hint--touch {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .hud__hint--touch {
+    display: list-item;
+  }
+
+  .hud__hint--keys {
+    display: none;
+  }
 }
 
 /* One binding per line: a single run-on row of keys is read as prose and

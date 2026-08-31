@@ -79,16 +79,19 @@ export function Hud(): React.JSX.Element | null {
 
       <div className="hud__controls">
         <ul className="hud__hint">
-          <li>
+          {/* Shown only where there is a finger to swipe with; the CSS hides
+              it on a fine pointer, and hides the key rows on a coarse one. */}
+          <li className="hud__hint--touch">Swipe — move one module</li>
+          <li className="hud__hint--keys">
             <kbd>WASD</kbd> / arrows — move
           </li>
-          <li>
+          <li className="hud__hint--keys">
             <kbd>Space</kbd> — scan code
           </li>
-          <li>
+          <li className="hud__hint--keys">
             <kbd>C</kbd> — top view
           </li>
-          <li>
+          <li className="hud__hint--keys">
             <kbd>R</kbd> — restart
           </li>
         </ul>
