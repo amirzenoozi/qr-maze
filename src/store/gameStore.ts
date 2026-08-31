@@ -141,7 +141,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       let result;
       try {
-        result = buildMaze(trimmed, get().difficulty);
+        // The clock is the variant. Re-entering a URL you have already
+        // exhausted gives a different route through the same code, and
+        // nothing has to be stored to remember what you have played.
+        result = buildMaze(trimmed, get().difficulty, startedAt);
       } catch (cause) {
         set({
           status: 'error',

@@ -47,6 +47,7 @@ function searchFrom(
   modules: Uint8Array,
   reserved: Uint8Array,
   source: number,
+  random?: () => number,
 ): Search {
   const n = size * size;
   const dist = new Int32Array(n).fill(-1);
@@ -64,6 +65,14 @@ function searchFrom(
   dist[source] = sourceCost;
   push(sourceCost, source);
 
+  // Most of this grid costs nothing to cross, so a huge number of routes tie
+  // for cheapest and the first neighbour to reach a cell keeps it. Shuffling
+  // the order the neighbours are tried in therefore picks a different route
+  // of the *same* minimal cost: the distances are untouched, so the carve is
+  // still optimal and still costs the decoder exactly as much. Only `prev`
+  // moves, which is what turns one URL into many different corridors.
+  const order = [0, 1, 2, 3];
+
   for (let cost = 0; cost < buckets.length; cost++) {
     const bucket = buckets[cost];
     if (!bucket) continue;
@@ -78,7 +87,10 @@ function searchFrom(
       const row = (cell / size) | 0;
       const col = cell % size;
 
-      for (const [dr, dc] of DIRECTIONS) {
+      if (random) shuffle(order, random);
+
+      for (const direction of order) {
+        const [dr, dc] = DIRECTIONS[direction];
         const nr = row + dr;
         const nc = col + dc;
         if (!inBounds(size, nr, nc)) continue;
@@ -197,9 +209,12 @@ export function carveFromBorder(
   modules: Uint8Array,
   reserved: Uint8Array,
   end: Point,
+  random?: () => number,
 ): BorderCarveResult | null {
   const endCell = idx(size, end.row, end.col);
-  const { dist, prev } = searchFrom(size, modules, reserved, endCell);
+  // Only the route varies with `random`; the distances it is chosen from do
+  // not, so the start anchor this picks is the same corner cell either way.
+  const { dist, prev } = searchFrom(size, modules, reserved, endCell, random);
 
   let bestCell = -1;
   let bestCost = Number.POSITIVE_INFINITY;
@@ -301,6 +316,7 @@ export function carveThroughWaypoints(
   start: Point,
   end: Point,
   waypointCount: number,
+  random?: () => number,
 ): CarveResult | null {
   const stops = [idx(size, start.row, start.col)];
 
@@ -320,7 +336,7 @@ export function carveThroughWaypoints(
     const from = stops[leg];
     const to = stops[leg + 1];
 
-    const { dist, prev } = searchFrom(size, current, reserved, from);
+    const { dist, prev } = searchFrom(size, current, reserved, from, random);
     if (dist[to] === -1) return null;
 
     const result = carveRoute(current, prev, to, from);

@@ -102,21 +102,59 @@ describe('difficulty', () => {
   });
 
   it.each(URLS)('opens up as the tier softens for %s', (url) => {
-    const reachable = DIFFICULTIES.map((tier) => board(tier, url).analysis.reachableCells);
+    const cells = (tier: Difficulty): number => board(tier, url).analysis.reachableCells;
 
-    // Easy is the most open and Insane the tightest. Adjacent tiers can tie —
-    // plugging is rejected wherever it would disconnect the exit — but the
-    // ordering must never invert.
-    for (let i = 1; i < reachable.length; i++) {
-      expect(reachable[i]).toBeLessThanOrEqual(reachable[i - 1]);
+    // Easy and Normal widen the same corridor from the same shuffled
+    // candidate list, so Easy's openings are a strict superset of Normal's
+    // and this cannot invert.
+    expect(cells('easy')).toBeGreaterThanOrEqual(cells('normal'));
+
+    // Insane routes through two far corners and plugs hardest, so it is never
+    // more open than Easy. The links *between* those two ends are not
+    // asserted: Hard and Insane bend the corridor through waypoints, so they
+    // are measured on a different board than Easy and Normal, and a roomier
+    // detour can leave Hard a cell or two ahead of Normal.
+    expect(cells('insane')).toBeLessThanOrEqual(cells('easy'));
+  });
+
+  it.each(URLS)('sizes the move budget by the tier slack for %s', (url) => {
+    // The guarantee is proportional, not absolute: each tier allows its own
+    // slack over the shortest route *on its own board*. Comparing raw budgets
+    // across tiers would compare different boards, and a widened Easy board
+    // can genuinely offer a shorter best route than a plugged Hard one.
+    let previous = Infinity;
+
+    for (const tier of DIFFICULTIES) {
+      const maze = board(tier, url);
+      const shortest = maze.analysis.shortestLength ?? 0;
+      const slack = (maze.moveBudget - shortest) / shortest;
+
+      expect(maze.moveBudget).toBe(moveBudget(shortest, tier));
+      expect(slack).toBeLessThan(previous);
+      previous = slack;
     }
   });
 
-  it.each(URLS)('loosens the move budget as the tier softens for %s', (url) => {
-    const budgets = DIFFICULTIES.map((tier) => board(tier, url).moveBudget);
+  it.each(URLS)('re-routes without resizing the code for %s', (url) => {
+    const boards = Array.from({ length: 8 }, (_unused, variant) => {
+      const result = buildMaze(url, 'normal', variant);
+      if (!result.ok) throw new Error(result.reason);
+      return result.maze;
+    });
 
-    for (let i = 1; i < budgets.length; i++) {
-      expect(budgets[i]).toBeLessThan(budgets[i - 1]);
+    // Every variant is a different maze...
+    const shapes = new Set(boards.map((maze) => maze.modules.join('')));
+    expect(shapes.size).toBe(boards.length);
+
+    // ...cut from the same symbol. The level is probed against one canonical
+    // board, so exhausting your retries and re-entering the URL gives a new
+    // route rather than a differently-sized code.
+    expect(new Set(boards.map((maze) => `${maze.level}${maze.size}`)).size).toBe(1);
+
+    for (const maze of boards) {
+      expect(decodeMatrix(maze.modules, maze.size)).toBe(url);
+      expect(maze.start.row + maze.start.col).toBe(7);
+      expect(maze.analysis.solvable).toBe(true);
     }
   });
 

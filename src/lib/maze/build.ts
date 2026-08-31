@@ -142,9 +142,36 @@ function applyStructure(
  * between widening and plugging — so a harder board spends the symbol's spare
  * error correction rather than asking for more of it.
  */
+/**
+ * Carve a corridor, dropping a waypoint at a time until one fits the budget.
+ *
+ * A cheaper route at the same level keeps the symbol the size the player
+ * expects; escalating would grow it and change the board entirely.
+ */
+function routeCarve(
+  size: number,
+  modules: Uint8Array,
+  reserved: Uint8Array,
+  start: Point,
+  end: Point,
+  maxDamage: number,
+  waypoints: number,
+  random?: () => number,
+): CarveResult | null {
+  for (let count = waypoints; count >= 0; count--) {
+    const candidate =
+      count === 0
+        ? carveFromBorder(size, modules, reserved, end, random)
+        : carveThroughWaypoints(size, modules, reserved, start, end, count, random);
+    if (candidate && candidate.carvedCount <= maxDamage) return candidate;
+  }
+  return null;
+}
+
 export function buildMaze(
   url: string,
   difficulty: Difficulty = DEFAULT_DIFFICULTY,
+  variant = 0,
   levels = EC_LEVELS,
 ): MazeBuildResult {
   const attempts: MazeBuildAttempt[] = [];
@@ -180,24 +207,22 @@ export function buildMaze(
     // One direct carve settles where the start goes. Its route is discarded
     // when waypoints are in play, but the border anchor it found still stands:
     // reachability does not change when extra modules are opened.
-    const anchor = carveFromBorder(qr.size, qr.modules, reserved, end);
+    // The variant only re-rolls which of the equally cheap routes is taken,
+    // so a rebuilt board costs the decoder the same and starts in the same
+    // corner. It is threaded in rather than stored: the caller passes a clock
+    // reading, and nothing has to remember what anyone has already played.
+    const route = mulberry32(hashString(`${url}|${level}|${variant}`));
+
+    const anchor = carveFromBorder(qr.size, qr.modules, reserved, end, route);
     if (!anchor) {
       record('no-corridor', 0, 0);
       continue;
     }
     const start = anchor.start;
 
-    // Drop a waypoint and try again before escalating the level. A cheaper
-    // route at the same level keeps the symbol the size the player expects;
-    // escalating would grow it and change the board entirely.
-    let carve: CarveResult | null = null;
-    for (let waypoints = config.waypoints; waypoints >= 0 && !carve; waypoints--) {
-      const candidate =
-        waypoints === 0
-          ? anchor
-          : carveThroughWaypoints(qr.size, qr.modules, reserved, start, end, waypoints);
-      if (candidate && candidate.carvedCount <= maxDamage) carve = candidate;
-    }
+    const carve = routeCarve(
+      qr.size, qr.modules, reserved, start, end, maxDamage, config.waypoints, route,
+    );
 
     if (!carve) {
       record('over-damage-budget', anchor.carvedCount, 0);
@@ -210,14 +235,29 @@ export function buildMaze(
       continue;
     }
 
-    // Seeded from the URL and level only. Fixing it makes a link rebuild the
-    // same board every time, which a shared play link depends on. Leaving the
-    // tier out of it does two further things: the level measured below comes
-    // out the same whichever tier asked, so difficulty never resizes the code;
-    // and because the candidate order is shared, Easy's extra openings are a
-    // superset of Normal's — the tiers read as one maze at different
-    // generosity rather than four unrelated boards.
-    const seed = hashString(`${url}|${level}`);
+    // Seeded from the URL, the level and the variant — deliberately not the
+    // tier. The level measured below then comes out the same whichever tier
+    // asked, so difficulty never resizes the code; and because the candidate
+    // order is shared, Easy's extra openings are a superset of Normal's, so
+    // the tiers read as one maze at different generosity rather than four
+    // unrelated boards. Holding the variant fixed reproduces a board exactly.
+    const seed = hashString(`${url}|${level}|${variant}`);
+
+    // The probe below runs against one canonical board that no variant ever
+    // plays: the unshuffled route under the unshuffled seed. The level it
+    // settles on is then a property of the URL and the tier alone. Measuring
+    // the variant's own board instead let a link sitting on the boundary
+    // between two levels flip size between plays, which moved the board size
+    // and the move count, not just the route. Equal-cost routes damage the
+    // symbol equally, so one reading holds for all of them.
+    const probeSeed = hashString(`${url}|${level}`);
+    const probeCarve = routeCarve(
+      qr.size, qr.modules, reserved, start, end, maxDamage, config.waypoints,
+    );
+    if (!probeCarve) {
+      record('over-damage-budget', carve.carvedCount, 0);
+      continue;
+    }
 
     // Measure, do not estimate. A percentage-of-modules budget badly
     // overstates what scattered edits cost: Reed-Solomon repairs whole
@@ -227,7 +267,7 @@ export function buildMaze(
     // afford to bisect for it.
     const decodes = (scale: number): boolean =>
       verifyDecodes(
-        applyStructure(qr.size, reserved, carve, start, end, CANONICAL_MIX, scale, seed)
+        applyStructure(qr.size, reserved, probeCarve, start, end, CANONICAL_MIX, scale, probeSeed)
           .modules,
         qr.size,
         url,
