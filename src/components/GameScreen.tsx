@@ -3,7 +3,7 @@ import { useGameStore } from '../store/gameStore';
 import { Hud } from './Hud';
 import { ScanBadge } from './ScanBadge';
 import { Scene } from './Scene';
-import { WinOverlay } from './WinOverlay';
+import { OutcomeOverlay } from './OutcomeOverlay';
 
 /**
  * Third screen: the maze at full bleed, with the HUD, the scannable badge and
@@ -23,7 +23,7 @@ export function GameScreen(): React.JSX.Element | null {
     <div className="screen screen--game">
       <Scene />
       <Hud />
-      <WinOverlay />
+      <OutcomeOverlay />
       <ScanBadge maze={maze} open={scanCardOpen} />
     </div>
   );

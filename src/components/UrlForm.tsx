@@ -1,13 +1,19 @@
 import { useState } from 'react';
+import { DIFFICULTIES, DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { useGameStore } from '../store/gameStore';
 
 /**
- * URL entry. The submitted string is both the QR payload and the maze seed:
- * a different URL is a different level.
+ * URL entry and difficulty choice.
+ *
+ * The submitted string is both the QR payload and the maze seed: a different
+ * URL is a different level. Difficulty then decides how that same symbol is
+ * shaped into a board.
  */
 export function UrlForm(): React.JSX.Element {
   const url = useGameStore((state) => state.url);
   const status = useGameStore((state) => state.status);
+  const difficulty = useGameStore((state) => state.difficulty);
+  const setDifficulty = useGameStore((state) => state.setDifficulty);
   const buildFromUrl = useGameStore((state) => state.buildFromUrl);
 
   const [draft, setDraft] = useState(url);
@@ -50,6 +56,31 @@ export function UrlForm(): React.JSX.Element {
           {building ? 'Building…' : 'Build maze'}
         </button>
       </div>
+
+      {/* A radiogroup rather than four toggles: exactly one tier is always
+          active, and arrow-key navigation comes free with the role. */}
+      <fieldset className="tiers">
+        <legend className="url-form__label">Difficulty</legend>
+        <div className="tiers__row">
+          {DIFFICULTIES.map((tier) => {
+            const config = DIFFICULTY_CONFIG[tier];
+            const active = tier === difficulty;
+            return (
+              <button
+                key={tier}
+                className={active ? 'tier tier--active' : 'tier'}
+                type="button"
+                aria-pressed={active}
+                title={config.blurb}
+                onClick={() => setDifficulty(tier)}
+              >
+                {config.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="tiers__blurb">{DIFFICULTY_CONFIG[difficulty].blurb}</p>
+      </fieldset>
     </form>
   );
 }

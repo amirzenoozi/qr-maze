@@ -233,6 +233,55 @@ body {
   border-color: var(--accent);
 }
 
+.tiers {
+  border: 0;
+  margin: 16px 0 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.tiers__row {
+  display: flex;
+  gap: 6px;
+}
+
+.tier {
+  flex: 1 1 0;
+  min-width: 0;
+  font-family: var(--pixel);
+  font-size: 8px;
+  line-height: 1.6;
+  color: var(--muted);
+  background: var(--bg);
+  border: 3px solid var(--border);
+  padding: 10px 4px;
+  cursor: pointer;
+  box-shadow: 3px 3px 0 var(--shadow);
+}
+
+.tier:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
+.tier:active {
+  transform: translate(3px, 3px);
+  box-shadow: none;
+}
+
+.tier--active {
+  color: var(--shadow);
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.tiers__blurb {
+  margin: 10px 0 0;
+  min-height: 2.4em;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 kbd {
   font-family: var(--body);
   font-size: 0.85em;
@@ -340,6 +389,16 @@ kbd {
   font-size: 11px;
   line-height: 1.6;
   margin-top: 5px;
+}
+
+/* The move budget is the only stat that can end the run, so it is the only
+   one allowed to shout. */
+.stat--urgent {
+  border-color: var(--danger);
+}
+
+.stat--urgent .stat__value {
+  color: var(--danger);
 }
 
 .hud__actions {
@@ -553,6 +612,16 @@ kbd {
   border: 4px solid var(--accent);
   box-shadow: 8px 8px 0 var(--shadow);
   animation: win-pop 320ms steps(4, end) both;
+}
+
+/* Same panel, different accent. Losing should read as the other half of a
+   familiar beat, not as an error dialog. */
+.win__panel--lost {
+  border-color: var(--danger);
+}
+
+.win__panel--lost .win__title {
+  color: var(--danger);
 }
 
 .win__eyebrow {

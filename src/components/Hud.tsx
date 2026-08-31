@@ -1,18 +1,23 @@
 import { useShallow } from 'zustand/react/shallow';
+import { DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { ROUTE_COUNT_CAP } from '../lib/maze/types';
 import { useGameStore } from '../store/gameStore';
 
 const numberFormat = new Intl.NumberFormat('en-US');
 
+/** Share of the move budget below which the readout starts warning. */
+const LOW_BUDGET = 0.25;
+
 interface StatProps {
   readonly label: string;
   readonly value: string;
   readonly hint?: string;
+  readonly urgent?: boolean;
 }
 
-function Stat({ label, value, hint }: StatProps): React.JSX.Element {
+function Stat({ label, value, hint, urgent = false }: StatProps): React.JSX.Element {
   return (
-    <div className="stat" title={hint}>
+    <div className={urgent ? 'stat stat--urgent' : 'stat'} title={hint}>
       <span className="stat__label">{label}</span>
       <span className="stat__value">{value}</span>
     </div>
@@ -38,6 +43,7 @@ export function Hud(): React.JSX.Element | null {
   if (!maze) return null;
 
   const { analysis } = maze;
+  const left = Math.max(0, maze.moveBudget - moves);
   const routes = analysis.routeCountSaturated
     ? `${numberFormat.format(ROUTE_COUNT_CAP)}+`
     : numberFormat.format(analysis.shortestRouteCount);
@@ -46,16 +52,23 @@ export function Hud(): React.JSX.Element | null {
     <>
       <div className="hud__stats">
         <Stat
-          label="Winning routes"
-          value={routes}
-          hint="Distinct shortest paths from start to exit"
+          label="Moves left"
+          value={numberFormat.format(left)}
+          hint={`${numberFormat.format(maze.moveBudget)} allowed on ${
+            DIFFICULTY_CONFIG[maze.difficulty].label
+          }`}
+          urgent={left <= maze.moveBudget * LOW_BUDGET}
         />
         <Stat
           label="Best"
           value={analysis.shortestLength === null ? '—' : `${analysis.shortestLength} moves`}
           hint="Length of a shortest route"
         />
-        <Stat label="Your moves" value={numberFormat.format(moves)} />
+        <Stat
+          label="Winning routes"
+          value={routes}
+          hint="Distinct shortest paths from start to exit"
+        />
       </div>
 
       <div className="hud__controls">

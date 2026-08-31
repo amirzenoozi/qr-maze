@@ -4,6 +4,7 @@
 import { useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
+import { DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
@@ -51,6 +52,8 @@ export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element |
     material.opacity = 0.22 + 0.12 * Math.sin(clock.elapsedTime * PULSE_SPEED);
   });
 
+  const beacon = DIFFICULTY_CONFIG[maze.difficulty].beacon;
+
   if (cameraMode === 'scan') return null;
 
   const [startX, startZ] = cellToWorld(maze.size, maze.start);
@@ -94,18 +97,24 @@ export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element |
           <meshStandardMaterial map={checker} roughness={0.9} />
         </mesh>
 
-        <mesh ref={beamRef} position={[0, BEAM_HEIGHT / 2, 0]}>
-          <boxGeometry args={[BEAM_WIDTH, BEAM_HEIGHT, BEAM_WIDTH]} />
-          <meshBasicMaterial
-            color="#ffd76a"
-            transparent
-            opacity={0.25}
-            // Additive and depth-write-free so the beam glows over the scene
-            // instead of punching a hole through whatever is behind it.
-            blending={THREE.AdditiveBlending}
-            depthWrite={false}
-          />
-        </mesh>
+        {/* The beam is the only part of the exit visible over a hedge, so
+            withholding it is the single biggest change to how lost the player
+            feels. Insane trades it for the flag alone, which you have to be
+            almost on top of to see. */}
+        {beacon && (
+          <mesh ref={beamRef} position={[0, BEAM_HEIGHT / 2, 0]}>
+            <boxGeometry args={[BEAM_WIDTH, BEAM_HEIGHT, BEAM_WIDTH]} />
+            <meshBasicMaterial
+              color="#ffd76a"
+              transparent
+              opacity={0.25}
+              // Additive and depth-write-free so the beam glows over the scene
+              // instead of punching a hole through whatever is behind it.
+              blending={THREE.AdditiveBlending}
+              depthWrite={false}
+            />
+          </mesh>
+        )}
       </group>
     </group>
   );
