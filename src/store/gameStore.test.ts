@@ -52,13 +52,34 @@ describe('lives', () => {
     expect(useGameStore.getState().lives).toBe(LIVES_PER_URL);
   });
 
-  it('spends one on every restart, whatever prompted it', async () => {
+  it('spends one on every restart of an unfinished or lost board', async () => {
     await build();
 
     for (let spent = 1; spent <= LIVES_PER_URL; spent++) {
       useGameStore.getState().restart();
       expect(useGameStore.getState().lives).toBe(LIVES_PER_URL - spent);
     }
+  });
+
+  it('replays a solved board for free', async () => {
+    await build();
+    useGameStore.setState({ won: true });
+
+    useGameStore.getState().restart();
+
+    expect(useGameStore.getState().lives).toBe(LIVES_PER_URL);
+    expect(useGameStore.getState().won).toBe(false);
+  });
+
+  it('still replays a solved board with no hearts left', async () => {
+    await build();
+    useGameStore.setState({ won: true, lives: 0 });
+
+    useGameStore.getState().restart();
+
+    // Winning ends the board; there is nothing left to dodge by restarting.
+    expect(useGameStore.getState().moves).toBe(0);
+    expect(useGameStore.getState().lives).toBe(0);
   });
 
   it('puts the player back at the start when it spends one', async () => {

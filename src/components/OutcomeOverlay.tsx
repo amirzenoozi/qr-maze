@@ -38,7 +38,9 @@ export function OutcomeOverlay(): React.JSX.Element | null {
   const best = maze.analysis.shortestLength;
   const shortest = best === null ? '—' : numberFormat.format(best);
   const perfect = won && best !== null && moves === best;
-  const spent = lives === 0;
+  // A replay after a win is free, so a solved board always offers one. Only a
+  // loss with no hearts left is the end of the road.
+  const spent = lives === 0 && !won;
 
   const title = won ? 'SOLVED!' : spent ? 'GAME OVER' : 'OUT OF MOVES';
 

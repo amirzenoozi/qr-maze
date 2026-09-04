@@ -65,7 +65,12 @@ export interface GameState {
   buildFromUrl: (url: string) => void;
   /** Attempt a one-cell orthogonal move; ignored when blocked or finished. */
   movePlayer: (deltaRow: number, deltaCol: number) => void;
-  /** Spend a life to put the player back at the start of the same board. */
+  /**
+   * Put the player back at the start of the same board.
+   *
+   * Costs a life, unless the board has just been won — a replay after a win
+   * is free.
+   */
   restart: () => void;
   /** Abandon the current maze and go back to the URL entry screen. */
   returnToStart: () => void;
@@ -227,15 +232,23 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   restart: () => {
-    const { maze, lives } = get();
+    const { maze, lives, won } = get();
+    if (!maze) return;
+
+    // A replay after a win is free. Charging every restart closes the one
+    // real loophole — restarting a move before the budget runs out — but a
+    // solved board has nothing left to dodge, so taking a heart for a victory
+    // lap only punishes finishing.
+    const free = won;
     // Out of retries is the end of the board, so the only way on is a new URL.
-    if (!maze || lives <= 0) return;
+    if (!free && lives <= 0) return;
+
     set({
       player: maze.start,
       moves: 0,
       won: false,
       lost: false,
-      lives: lives - 1,
+      lives: free ? lives : lives - 1,
       cameraMode: 'gameplay',
       scanCardOpen: false,
     });
