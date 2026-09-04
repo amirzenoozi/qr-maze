@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { CELL_SIZE, cellToWorld } from '../lib/maze/layout';
 import type { Maze, Point } from '../lib/maze/types';
+import { SKY, type TimeOfDay } from '../lib/render/daylight';
 import type { CameraMode } from '../store/gameStore';
 
 const RADIUS = CELL_SIZE * 0.3;
@@ -13,6 +14,7 @@ interface PlayerProps {
   readonly maze: Maze;
   readonly player: Point;
   readonly cameraMode: CameraMode;
+  readonly timeOfDay: TimeOfDay;
 }
 
 /**
@@ -26,9 +28,10 @@ interface PlayerProps {
  * The sphere is hidden in scan mode so it cannot occlude a module while the
  * symbol is being scanned.
  */
-export function Player({ maze, player, cameraMode }: PlayerProps): React.JSX.Element {
+export function Player({ maze, player, cameraMode, timeOfDay }: PlayerProps): React.JSX.Element {
   const groupRef = useRef<THREE.Group>(null);
   const target = useRef(new THREE.Vector3());
+  const glow = SKY[timeOfDay].glow;
 
   useFrame((_, delta) => {
     const group = groupRef.current;
@@ -51,20 +54,20 @@ export function Player({ maze, player, cameraMode }: PlayerProps): React.JSX.Ele
         <meshStandardMaterial
           color="#7de2ff"
           emissive="#37c6ff"
-          emissiveIntensity={2.2}
+          emissiveIntensity={glow.emissiveIntensity}
           roughness={0.25}
           flatShading
         />
       </mesh>
 
       {/* Travels with the sphere and casts the maze's real-time shadows.
-          Dimmed for the daylight scene: under a morning sun this reads as the
-          sphere's own glow rather than competing as a second sun. */}
+          Dimmed by day, where a morning sun reduces it to the sphere's own
+          glow; turned up at night, where it becomes the main light source. */}
       <pointLight
         castShadow
         color="#8fe3ff"
-        intensity={12}
-        distance={11}
+        intensity={glow.intensity}
+        distance={glow.distance}
         decay={2}
         position={[0, CELL_SIZE * 0.9, 0]}
         shadow-mapSize-width={1024}

@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { useShallow } from 'zustand/react/shallow';
 import { floorExtent } from '../lib/maze/layout';
+import { SKY } from '../lib/render/daylight';
 import { useGameStore } from '../store/gameStore';
 import { CameraRig } from './CameraRig';
 import { Confetti } from './Confetti';
@@ -31,12 +32,13 @@ const SCAN_DPR: [number, number] = [1, 2];
  * only mounted once there is something to look at.
  */
 export function Scene(): React.JSX.Element | null {
-  const { maze, player, won, cameraMode } = useGameStore(
+  const { maze, player, won, cameraMode, timeOfDay } = useGameStore(
     useShallow((state) => ({
       maze: state.maze,
       player: state.player,
       won: state.won,
       cameraMode: state.cameraMode,
+      timeOfDay: state.timeOfDay,
     })),
   );
 
@@ -45,6 +47,7 @@ export function Scene(): React.JSX.Element | null {
   const gameplay = cameraMode === 'gameplay';
   // The sun has to light the whole board, quiet zone included.
   const reach = floorExtent(maze.size) / 2;
+  const sky = SKY[timeOfDay];
 
   return (
     <Canvas
@@ -56,19 +59,28 @@ export function Scene(): React.JSX.Element | null {
       gl={{ antialias: false }}
       camera={{ position: [0, 12, 12], fov: 50, near: 0.1, far: 500 }}
     >
-      <color attach="background" args={[gameplay ? '#9fd8f5' : '#ffffff']} />
+      <color attach="background" args={[gameplay ? sky.background : '#ffffff']} />
 
       {/* Scan mode is fully unlit: both materials switch to basic shading. */}
       {gameplay && (
         <>
-          {/* Spring morning: bright sky fill, warm low sun. */}
-          <ambientLight intensity={1.15} color="#dbeeff" />
-          <hemisphereLight intensity={0.9} color="#cfeaff" groundColor="#7cc24a" />
+          {/* Every value comes from the active sky; see lib/render/daylight. */}
+          <ambientLight intensity={sky.ambient.intensity} color={sky.ambient.color} />
+          <hemisphereLight
+            intensity={sky.hemisphere.intensity}
+            color={sky.hemisphere.color}
+            groundColor={sky.hemisphere.groundColor}
+          />
           <directionalLight
-            // Kept low in the sky so the hedges throw long morning shadows.
-            position={[reach * 0.9, reach * 0.7, reach * 0.6]}
-            intensity={1.5}
-            color="#fff4d8"
+            // Low for long morning shadows by day, high by night: moonlight
+            // rakes nothing, and a high caster keeps the hedges in relief.
+            position={[
+              reach * sky.sun.position[0],
+              reach * sky.sun.position[1],
+              reach * sky.sun.position[2],
+            ]}
+            intensity={sky.sun.intensity}
+            color={sky.sun.color}
             castShadow
             shadow-mapSize={[2048, 2048]}
             shadow-bias={-0.0012}
@@ -90,7 +102,7 @@ export function Scene(): React.JSX.Element | null {
       <Markers maze={maze} cameraMode={cameraMode} />
       <ScanMarkers maze={maze} player={player} cameraMode={cameraMode} />
       <Confetti maze={maze} active={won} cameraMode={cameraMode} />
-      <Player maze={maze} player={player} cameraMode={cameraMode} />
+      <Player maze={maze} player={player} cameraMode={cameraMode} timeOfDay={timeOfDay} />
       <CameraRig maze={maze} player={player} cameraMode={cameraMode} />
     </Canvas>
   );
