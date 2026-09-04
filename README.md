@@ -129,6 +129,11 @@ Enter a URL, wait out the loading screen, and walk.
 
 ### Day and night
 
+The game opens on whichever sky matches your own clock — day between 07:00 and
+19:00 local, night otherwise. After that it is yours: `N`, or the button in the
+HUD, swaps it, and nothing recomputes it later. Relighting the board mid-run
+because the evening arrived would overrule a choice you had just made.
+
 `N`, or the button in the HUD, swaps the sky. Only the 3D world changes: the
 panels are already dark, and the top-down view and the pinned scan card are
 unlit passes that ignore lighting entirely, so neither sky can affect whether
@@ -176,11 +181,13 @@ free — its map is dark crust and bright veins, so reusing it as the emissive m
 lights the cracks and leaves the rock unlit.
 
 Nothing is an imported model. The world is faceted everywhere else, so a
-detailed mesh would be the one smooth object in it. The round bodies roll
-through the real arc length for their radius rather than a fixed turn, because
-a ball that undershoots its own circumference reads as skidding; Pixel instead
-tips a quarter turn onto its next face, which is what a block does however far
-the cell is.
+detailed mesh would be the one smooth object in it.
+
+Every rolling body turns by the distance it covered divided by the radius it
+turns on, so none of them skid. For a ball that radius is its own. For Pixel it
+is half an edge, and the edge is exactly half a cell — which is why it is that
+size and not some rounder-looking number. Anything else and the cube would
+either under-rotate or come to rest balanced on a corner.
 
 Like the sky, none of this can affect scanning — the player is hidden in the
 top-down view, and three.js drops its light along with it.

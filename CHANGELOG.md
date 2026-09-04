@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-09-04
+
+### Added
+
+- The sky now opens on whichever one matches the visitor's local clock, day
+  between 07:00 and 19:00. It is only the starting value: once chosen, the sky
+  stays chosen rather than relighting the board as the evening arrives.
+
+### Fixed
+
+- Pixel now rolls the right distance. A cube tips a quarter turn per edge
+  length travelled rather than per cell, so at its old size it under-rotated by
+  about half and visibly skidded. Its edge is now exactly half a cell, which
+  turns it twice per move and lands it flat on a face every time.
+
 ## [1.10.0] - 2026-09-04
 
 ### Added
@@ -333,7 +348,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.2...v1.8.0
