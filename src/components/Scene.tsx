@@ -32,13 +32,14 @@ const SCAN_DPR: [number, number] = [1, 2];
  * only mounted once there is something to look at.
  */
 export function Scene(): React.JSX.Element | null {
-  const { maze, player, won, cameraMode, timeOfDay } = useGameStore(
+  const { maze, player, won, cameraMode, timeOfDay, skin } = useGameStore(
     useShallow((state) => ({
       maze: state.maze,
       player: state.player,
       won: state.won,
       cameraMode: state.cameraMode,
       timeOfDay: state.timeOfDay,
+      skin: state.skin,
     })),
   );
 
@@ -102,7 +103,13 @@ export function Scene(): React.JSX.Element | null {
       <Markers maze={maze} cameraMode={cameraMode} />
       <ScanMarkers maze={maze} player={player} cameraMode={cameraMode} />
       <Confetti maze={maze} active={won} cameraMode={cameraMode} />
-      <Player maze={maze} player={player} cameraMode={cameraMode} timeOfDay={timeOfDay} />
+      <Player
+        maze={maze}
+        player={player}
+        cameraMode={cameraMode}
+        timeOfDay={timeOfDay}
+        skin={skin}
+      />
       <CameraRig maze={maze} player={player} cameraMode={cameraMode} />
     </Canvas>
   );
