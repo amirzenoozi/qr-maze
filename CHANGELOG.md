@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Position markers in the top-down view. Red ticks on the top and left edges
+  mark the player's row and column, green ticks on the other two mark the
+  exit. They sit in a ring outside the quiet zone rather than on the code: a
+  coloured dot on a light module binarises to dark and flips that module, and
+  a mark inside the quiet zone eats the margin a scanner needs to lock on.
+  The view widens by two modules to make room, so the symbol keeps its full
+  four-module quiet zone.
+
+### Fixed
+
+- Replaying a board you just won no longer costs a heart. Charging every
+  restart closes the one real loophole — restarting a move before the budget
+  runs out — but a solved board has nothing left to dodge, so the charge only
+  punished finishing. A win now always offers a replay, even at zero hearts.
+
 ## [1.6.0] - 2026-08-31
 
 ### Added

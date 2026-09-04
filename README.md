@@ -132,10 +132,13 @@ plays.
 
 Nothing in this maze can hurt you — there are no enemies, no hazards and no
 clock — so a heart here is not damage. It is the right to start the board over.
-Every restart spends one, whether you press *Try again* after running out of
-moves, *Play again* after winning, or `R` halfway through a run. Charging all
-three is what makes the counter mean anything: if only a loss cost a heart, you
-could restart one move before the budget expired and never pay.
+Restarting spends one, whether you press *Try again* after running out of moves
+or `R` halfway through a run. Charging the mid-run restart is what makes the
+counter mean anything: if only a loss cost a heart, you could restart one move
+before the budget expired and never pay.
+
+A replay after a *win* is free. A solved board has nothing left to dodge, so
+taking a heart for a victory lap would only punish finishing.
 
 When the hearts are gone the board is finished. The overlay drops its retry
 button and offers only a new URL, which deals a fresh set.
@@ -206,7 +209,11 @@ generosity rather than four unrelated boards.
   Point a phone at it during play or after winning; it is the carved matrix,
   the same one the build step decoded to prove it works.
 - The **top-down view** (`C`) flattens the world to pure black and white so the
-  screen itself becomes a scannable code.
+  screen itself becomes a scannable code. Red ticks on the top and left edges
+  mark your row and column; green ticks on the other two mark the exit. They
+  sit in a ring *outside* the quiet zone, never on the code: a coloured dot on
+  a light module binarises to dark and flips it, and a mark inside the quiet
+  zone eats the blank margin a scanner needs to find the finder patterns.
 
 ### Sharing a maze
 
