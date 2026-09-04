@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-09-04
+
+### Added
+
+- Four player bodies, chosen on the start screen or cycled mid-run with `B`.
+  Firefly is the original blue sphere; Ember is a spinning octahedron; Nova is a
+  tumbling icosahedron; Pixel is a cube that rolls a quarter turn per move.
+- Each body tints and trims the travelling light, which is the only moving light
+  on the board and the main light source at night. Ember burns hot and close,
+  Nova reaches further and dimmer. The trims are multipliers on the sky's
+  lantern, so choosing a body shifts the night without overriding how it is lit.
+
 ## [1.8.0] - 2026-09-04
 
 ### Added
@@ -303,7 +315,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.0...v1.7.1

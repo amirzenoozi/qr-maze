@@ -124,6 +124,7 @@ Enter a URL, wait out the loading screen, and walk.
 | `Space` | Open or close the enlarged scan card |
 | `C` | Toggle the flat top-down view (movement pauses while it is open) |
 | `N` | Switch between day and night |
+| `B` | Change the player's body |
 | `R` | Restart the current maze (spends a retry) |
 
 ### Day and night
@@ -137,6 +138,33 @@ Night is where the player's lantern finally does its job. The brief always
 called for a glowing sphere casting real-time shadows on the walls, but under a
 spring morning a lantern is invisible, so it had been dimmed to a glow. After
 dark it becomes the main light source and the hedges close in around it.
+
+### Bodies
+
+Four of them, chosen on the start screen or cycled mid-run with `B`: **Firefly**,
+the blue sphere that bobs; **Ember**, a spinning octahedron; **Nova**, a
+tumbling icosahedron; and **Pixel**, a cube that rolls a quarter turn per move.
+
+They are more than a recolour, because the player carries the only moving light
+on the board. Each body tints that light and trims it: Ember burns hot and
+close, so the hedges either side are lit hard and the corridor ahead falls away
+faster, while Nova is a colder pinpoint that reaches further. The trims are
+multipliers on the sky's lantern rather than absolute values, so a body shifts
+the night without overriding how it is lit.
+
+The palettes are picked against the world rather than against each other. The
+board is green hedges and cream gravel under a blue or navy sky, so orange
+reads as the complement of the sky and magenta as the complement of the hedges.
+Green would have vanished into the walls.
+
+Every body is a low-poly primitive. The world is faceted everywhere else, so an
+imported model would be the one smooth, high-detail object in it. Pixel is the
+most native of the four: the hedges, the blossoms, the fence and the confetti
+are all boxes already, and rolling is the only thing here that gives movement
+any weight, since every other body slides.
+
+Like the sky, none of this can affect scanning — the player is hidden in the
+top-down view, and three.js drops its light along with it.
 
 ### Retries
 
