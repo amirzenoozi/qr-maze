@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.7.2] - 2026-09-04
+
+### Changed
+
+- Movement is refused while the top-down view is open. The flat view shows the
+  whole board and a crosshair pinned to the player, which between them answer
+  the question the maze is asking; walking with that up was not playing it. The
+  block sits in the store rather than in the input hooks, so keyboard and touch
+  cannot drift apart, and the HUD posts a paused notice so a dead keypress does
+  not read as a bug.
+
 ## [1.7.1] - 2026-09-04
 
 ### Changed
@@ -278,7 +289,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.1...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.2...HEAD
+[1.7.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.1...v1.7.2
 [1.7.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.0...v1.7.1
 [1.7.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.5.0...v1.6.0

@@ -122,7 +122,7 @@ Enter a URL, wait out the loading screen, and walk.
 | `W` `A` `S` `D` or arrow keys | Move one module |
 | Swipe (touch) | Move one module |
 | `Space` | Open or close the enlarged scan card |
-| `C` | Toggle the flat top-down view |
+| `C` | Toggle the flat top-down view (movement pauses while it is open) |
 | `R` | Restart the current maze (spends a retry) |
 
 ### Retries
@@ -211,6 +211,13 @@ generosity rather than four unrelated boards.
 - The **top-down view** (`C`) flattens the world to pure black and white so the
   screen itself becomes a scannable code. A faint red crosshair runs the full
   width and height of the field; you are standing where the two lines meet.
+
+  **Movement is paused while it is open.** The whole board and your exact
+  position are on screen at once, which is the answer to the question the maze
+  is asking — walking with that up would not be solving it. The block lives in
+  the store rather than in the input hooks, so keyboard and touch cannot
+  diverge, and the HUD says so instead of letting a dead keypress read as a
+  bug.
 
   The lines cross the code, so they are held at 35% opacity: a crossed light
   module still reads about 200 of 255 and a dark one about 32, leaving both
