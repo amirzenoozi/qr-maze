@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DIRECTIONS } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
+import { PLAYER_SKINS } from '../lib/render/skins';
 import { LIVES_PER_URL, useGameStore } from './gameStore';
 
 /** Smallest symbol of the usual test set, so each build stays quick. */
@@ -231,5 +232,31 @@ describe('time of day', () => {
 
     useGameStore.getState().returnToStart();
     expect(useGameStore.getState().timeOfDay).toBe('night');
+  });
+});
+
+describe('player skin', () => {
+  it('cycles through every body and wraps', () => {
+    expect(useGameStore.getState().skin).toBe(PLAYER_SKINS[0]);
+
+    // It is bound to a key, so wrapping is the property that matters.
+    for (const expected of [...PLAYER_SKINS.slice(1), PLAYER_SKINS[0]]) {
+      useGameStore.getState().cycleSkin();
+      expect(useGameStore.getState().skin).toBe(expected);
+    }
+  });
+
+  it('survives everything that resets a board', async () => {
+    await build();
+    useGameStore.getState().setSkin('pixel');
+
+    useGameStore.getState().restart();
+    expect(useGameStore.getState().skin).toBe('pixel');
+
+    await build('https://example.com');
+    expect(useGameStore.getState().skin).toBe('pixel');
+
+    useGameStore.getState().returnToStart();
+    expect(useGameStore.getState().skin).toBe('pixel');
   });
 });

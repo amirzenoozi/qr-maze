@@ -4,6 +4,7 @@ import { DEFAULT_DIFFICULTY, type Difficulty } from '../lib/maze/difficulty';
 import type { Maze, Point } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
 import type { TimeOfDay } from '../lib/render/daylight';
+import { DEFAULT_SKIN, PLAYER_SKINS, type PlayerSkinId } from '../lib/render/skins';
 
 /** Camera presentation modes. */
 export type CameraMode = 'gameplay' | 'scan';
@@ -64,6 +65,14 @@ export interface GameState {
   readonly timeOfDay: TimeOfDay;
 
   /**
+   * Which body the player is wearing.
+   *
+   * Cosmetic, and kept out of every reset for the same reason as the sky: it
+   * is a preference, not part of a run.
+   */
+  readonly skin: PlayerSkinId;
+
+  /**
    * Whether the corner badge is enlarged to its centred, easily scannable
    * size. It is the same element either way, so this is a presentation flag
    * rather than a separate dialog.
@@ -88,6 +97,9 @@ export interface GameState {
   toggleCameraMode: () => void;
   setTimeOfDay: (time: TimeOfDay) => void;
   toggleTimeOfDay: () => void;
+  setSkin: (skin: PlayerSkinId) => void;
+  /** Step to the next body, wrapping. Bound to a key, so it has to wrap. */
+  cycleSkin: () => void;
   openScanCard: () => void;
   closeScanCard: () => void;
   toggleScanCard: () => void;
@@ -137,6 +149,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   variant: Date.now(),
   cameraMode: 'gameplay',
   timeOfDay: 'day',
+  skin: DEFAULT_SKIN,
   scanCardOpen: false,
 
   setDifficulty: (difficulty) => set({ difficulty }),
@@ -301,6 +314,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   setTimeOfDay: (time) => set({ timeOfDay: time }),
 
   toggleTimeOfDay: () => set({ timeOfDay: get().timeOfDay === 'day' ? 'night' : 'day' }),
+
+  setSkin: (skin) => set({ skin }),
+
+  cycleSkin: () => {
+    const next = (PLAYER_SKINS.indexOf(get().skin) + 1) % PLAYER_SKINS.length;
+    set({ skin: PLAYER_SKINS[next] });
+  },
 
   openScanCard: () => set({ scanCardOpen: true }),
 

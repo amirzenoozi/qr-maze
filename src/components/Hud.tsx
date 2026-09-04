@@ -106,6 +106,9 @@ export function Hud(): React.JSX.Element | null {
             <kbd>N</kbd> — day / night
           </li>
           <li className="hud__hint--keys">
+            <kbd>B</kbd> — change body
+          </li>
+          <li className="hud__hint--keys">
             <kbd>R</kbd> — restart
           </li>
         </ul>

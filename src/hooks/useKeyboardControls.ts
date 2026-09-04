@@ -97,6 +97,11 @@ export function useKeyboardControls(enabled: boolean): void {
         event.preventDefault();
         useGameStore.getState().toggleTimeOfDay();
       }
+
+      if (event.code === 'KeyB') {
+        event.preventDefault();
+        useGameStore.getState().cycleSkin();
+      }
     };
 
     const onKeyUp = (event: KeyboardEvent): void => {
