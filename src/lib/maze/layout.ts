@@ -32,3 +32,19 @@ export function boardExtent(size: number): number {
 export function floorExtent(size: number): number {
   return (size + QUIET_ZONE * 2) * CELL_SIZE;
 }
+
+/**
+ * Extra blank ring drawn beyond the quiet zone in the top-down view.
+ *
+ * The position markers live out here rather than on the code. Anything drawn
+ * over a module flips it — a coloured dot on a light module reads dark to a
+ * binarising decoder — and anything inside the quiet zone eats the margin a
+ * scanner needs to find the finder patterns. Outside both, a marker costs the
+ * symbol nothing.
+ */
+export const MARKER_RING = 2;
+
+/** World-space width of the top-down view, quiet zone plus marker ring. */
+export function scanExtent(size: number): number {
+  return (size + (QUIET_ZONE + MARKER_RING) * 2) * CELL_SIZE;
+}

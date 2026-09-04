@@ -4,7 +4,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
 import * as THREE from 'three';
-import { cellToWorld, floorExtent } from '../lib/maze/layout';
+import { cellToWorld, scanExtent } from '../lib/maze/layout';
 import type { Maze, Point } from '../lib/maze/types';
 import type { CameraMode } from '../store/gameStore';
 
@@ -49,8 +49,8 @@ export function CameraRig({ maze, player, cameraMode }: CameraRigProps): null {
     const [playerX, playerZ] = cellToWorld(maze.size, player);
 
     if (cameraMode === 'scan') {
-      // Height that frames the symbol plus its quiet zone at SCAN_FOV.
-      const halfExtent = floorExtent(maze.size) / 2;
+      // Height that frames the symbol, its quiet zone and the marker ring.
+      const halfExtent = scanExtent(maze.size) / 2;
       const height = halfExtent / Math.tan(THREE.MathUtils.degToRad(SCAN_FOV / 2));
 
       desiredPosition.current.set(0, height, 0);

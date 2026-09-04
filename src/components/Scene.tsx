@@ -8,6 +8,7 @@ import { Fence } from './Fence';
 import { Floor } from './Floor';
 import { Flowers } from './Flowers';
 import { Markers } from './Markers';
+import { ScanMarkers } from './ScanMarkers';
 import { Player } from './Player';
 import { Trees } from './Trees';
 import { Walls } from './Walls';
@@ -87,6 +88,7 @@ export function Scene(): React.JSX.Element | null {
       <Flowers maze={maze} cameraMode={cameraMode} />
       <Trees maze={maze} cameraMode={cameraMode} />
       <Markers maze={maze} cameraMode={cameraMode} />
+      <ScanMarkers maze={maze} player={player} cameraMode={cameraMode} />
       <Confetti maze={maze} active={won} cameraMode={cameraMode} />
       <Player maze={maze} player={player} cameraMode={cameraMode} />
       <CameraRig maze={maze} player={player} cameraMode={cameraMode} />

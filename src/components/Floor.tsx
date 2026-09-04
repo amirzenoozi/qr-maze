@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo } from 'react';
-import { floorExtent } from '../lib/maze/layout';
+import { floorExtent, scanExtent } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
 import type { CameraMode } from '../store/gameStore';
@@ -21,7 +21,10 @@ interface FloorProps {
  */
 export function Floor({ maze, cameraMode }: FloorProps): React.JSX.Element {
   // Includes the quiet zone, without which a scanner cannot lock on.
-  const extent = floorExtent(maze.size);
+  // The top-down view widens the white field by one more ring, so the
+  // position markers have somewhere to sit that is not the quiet zone.
+  const extent =
+    cameraMode === 'scan' ? scanExtent(maze.size) : floorExtent(maze.size);
 
   // One texture tile per QR module, so the gravel grid lines up with the maze
   // grid instead of drifting across it. `repeat` is per-texture but the pixel
