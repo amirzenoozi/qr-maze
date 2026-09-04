@@ -245,6 +245,13 @@ body {
   gap: 6px;
 }
 
+/* The bodies outgrew a single row. A grid rather than a wrapping flex row so
+   the last line stays the same column width as the ones above it. */
+.tiers__row--grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(72px, 1fr));
+}
+
 .tier {
   flex: 1 1 0;
   min-width: 0;

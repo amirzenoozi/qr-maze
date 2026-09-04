@@ -90,7 +90,7 @@ export function UrlForm(): React.JSX.Element {
           trade for a choice that costs nothing. */}
       <fieldset className="tiers">
         <legend className="url-form__label">Player</legend>
-        <div className="tiers__row">
+        <div className="tiers__row tiers__row--grid">
           {PLAYER_SKINS.map((id) => {
             const option = SKIN[id];
             const active = id === skin;
