@@ -1,8 +1,29 @@
+import type { BallTextureId } from './ballTextures';
+
 /** Which body the player is wearing. */
-export type PlayerSkinId = 'firefly' | 'ember' | 'nova' | 'pixel';
+export type PlayerSkinId =
+  | 'firefly'
+  | 'ember'
+  | 'nova'
+  | 'pixel'
+  | 'lava'
+  | 'football'
+  | 'basketball'
+  | 'pokeball'
+  | 'mars';
 
 /** Selection order, used by the picker and by the cycle key. */
-export const PLAYER_SKINS: readonly PlayerSkinId[] = ['firefly', 'ember', 'nova', 'pixel'];
+export const PLAYER_SKINS: readonly PlayerSkinId[] = [
+  'firefly',
+  'ember',
+  'nova',
+  'pixel',
+  'lava',
+  'football',
+  'basketball',
+  'pokeball',
+  'mars',
+];
 
 export const DEFAULT_SKIN: PlayerSkinId = 'firefly';
 
@@ -12,7 +33,7 @@ export const DEFAULT_SKIN: PlayerSkinId = 'firefly';
  * All four are low-poly on purpose. The world is faceted everywhere else, so a
  * smooth or imported model would be the one high-detail object in it.
  */
-export type SkinShape = 'sphere' | 'octahedron' | 'icosahedron' | 'cube';
+export type SkinShape = 'sphere' | 'octahedron' | 'icosahedron' | 'cube' | 'ball' | 'rock';
 
 /** How the body carries itself between cells. */
 export type SkinMotion = 'bob' | 'spin' | 'tumble' | 'roll';
@@ -36,6 +57,19 @@ export interface PlayerSkin {
    * choosing a body would quietly break how the night is lit.
    */
   readonly glow: { readonly intensity: number; readonly distance: number };
+  /**
+   * An equirectangular map, for bodies that are a picture of something rather
+   * than a colour. It doubles as the emissive map, so the body self-lights in
+   * its own colours and the pattern survives being lit from inside.
+   */
+  readonly texture?: BallTextureId;
+  /**
+   * Multiplier on the sky's emissive strength, defaulting to 1.
+   *
+   * Textured bodies need far less than a solid one: at full strength a map
+   * washes flat and stops reading as a football or a planet.
+   */
+  readonly emissiveScale?: number;
 }
 
 /**
@@ -101,5 +135,73 @@ export const SKIN: Record<PlayerSkinId, PlayerSkin> = {
     emissive: '#ffc94a',
     light: '#ffe9b0',
     glow: { intensity: 1, distance: 1 },
+  },
+
+  // A dark crust with molten cracks. The map is the only bright thing about
+  // it, so reusing it as the emissive map lights the veins and leaves the rock
+  // itself unlit — which is the whole effect, and costs nothing extra.
+  lava: {
+    label: 'Lava',
+    blurb: 'A cooling rock with molten cracks. Burns hot and close.',
+    shape: 'rock',
+    motion: 'roll',
+    color: '#ffffff',
+    emissive: '#ffffff',
+    light: '#ff8a3d',
+    glow: { intensity: 1.2, distance: 0.8 },
+    texture: 'lava',
+    emissiveScale: 0.75,
+  },
+
+  football: {
+    label: 'Football',
+    blurb: 'Black and white. The brightest body on a dark board.',
+    shape: 'ball',
+    motion: 'roll',
+    color: '#ffffff',
+    emissive: '#ffffff',
+    light: '#f4f7ff',
+    glow: { intensity: 1, distance: 1.1 },
+    texture: 'football',
+    emissiveScale: 0.22,
+  },
+
+  basketball: {
+    label: 'Basketball',
+    blurb: 'Orange against a blue sky, seams and all.',
+    shape: 'ball',
+    motion: 'roll',
+    color: '#ffffff',
+    emissive: '#ffffff',
+    light: '#ffb877',
+    glow: { intensity: 1.05, distance: 0.95 },
+    texture: 'basketball',
+    emissiveScale: 0.28,
+  },
+
+  pokeball: {
+    label: 'Pokéball',
+    blurb: 'Red over white. The catch button faces you as it rolls.',
+    shape: 'ball',
+    motion: 'roll',
+    color: '#ffffff',
+    emissive: '#ffffff',
+    light: '#ff9d8f',
+    glow: { intensity: 1, distance: 1 },
+    texture: 'pokeball',
+    emissiveScale: 0.26,
+  },
+
+  mars: {
+    label: 'Mars',
+    blurb: 'A rusty little planet, poles and all, rolling a maze.',
+    shape: 'ball',
+    motion: 'roll',
+    color: '#ffffff',
+    emissive: '#ffffff',
+    light: '#ffa878',
+    glow: { intensity: 0.95, distance: 1.05 },
+    texture: 'mars',
+    emissiveScale: 0.3,
   },
 };

@@ -3,6 +3,7 @@ import { useRef } from 'react';
 import * as THREE from 'three';
 import { CELL_SIZE, cellToWorld } from '../lib/maze/layout';
 import type { Maze, Point } from '../lib/maze/types';
+import { getBallTexture } from '../lib/render/ballTextures';
 import { SKY, type TimeOfDay } from '../lib/render/daylight';
 import { SKIN, type PlayerSkinId, type SkinShape } from '../lib/render/skins';
 import type { CameraMode } from '../store/gameStore';
@@ -10,6 +11,9 @@ import type { CameraMode } from '../store/gameStore';
 const RADIUS = CELL_SIZE * 0.3;
 /** Sized so a rolling cube clears the floor and still fits a one-module corridor. */
 const CUBE_SIDE = CELL_SIZE * 0.52;
+/** The real balls sit a shade larger, which is what makes them read as balls. */
+const BALL_RADIUS = RADIUS * 1.07;
+const ROCK_RADIUS = RADIUS * 1.15;
 /**
  * Ride height, shared by every body.
  *
@@ -34,6 +38,25 @@ interface PlayerProps {
   readonly skin: PlayerSkinId;
 }
 
+/**
+ * How far a body turns per cell travelled.
+ *
+ * Round bodies use the real arc length, so a ball covering one module turns
+ * exactly as far as its circumference says it should — anything else reads as
+ * a ball skidding. The cube instead tips a quarter turn onto its next face,
+ * which is what a block does regardless of how far the cell is.
+ */
+function rollAngle(shape: SkinShape): number {
+  switch (shape) {
+    case 'ball':
+      return CELL_SIZE / BALL_RADIUS;
+    case 'rock':
+      return CELL_SIZE / ROCK_RADIUS;
+    default:
+      return Math.PI / 2;
+  }
+}
+
 /** The primitive for a body, kept low-poly to match the faceted world. */
 function SkinGeometry({ shape }: { readonly shape: SkinShape }): React.JSX.Element {
   switch (shape) {
@@ -43,6 +66,15 @@ function SkinGeometry({ shape }: { readonly shape: SkinShape }): React.JSX.Eleme
       return <icosahedronGeometry args={[RADIUS * 1.1, 0]} />;
     case 'cube':
       return <boxGeometry args={[CUBE_SIDE, CUBE_SIDE, CUBE_SIDE]} />;
+    case 'rock':
+      // Twelve flat pentagons. Chunky enough to read as broken stone, and
+      // three.js maps polyhedron UVs by spherical angle, so the crack texture
+      // still wraps it.
+      return <dodecahedronGeometry args={[ROCK_RADIUS, 0]} />;
+    case 'ball':
+      // Rounder and smooth-shaded, because a texture on eight facets reads as
+      // a painted gem rather than as a ball.
+      return <sphereGeometry args={[BALL_RADIUS, 16, 12]} />;
     default:
       // Deliberately low-poly: a smooth 32-segment sphere would be the one
       // round, high-detail object in an otherwise faceted pixel world.
@@ -84,6 +116,8 @@ export function Player({
 
   const glow = SKY[timeOfDay].glow;
   const skin = SKIN[skinId];
+  const map = skin.texture ? getBallTexture(skin.texture) : null;
+  const turn = rollAngle(skin.shape);
 
   useFrame((state, delta) => {
     const group = groupRef.current;
@@ -109,7 +143,7 @@ export function Player({
         // Grid rows run along +Z and columns along +X.
         step.current.set(deltaCol, 0, deltaRow);
         axis.current.set(0, 1, 0).cross(step.current);
-        quarter.current.setFromAxisAngle(axis.current, Math.PI / 2);
+        quarter.current.setFromAxisAngle(axis.current, turn);
         roll.current.premultiply(quarter.current);
       }
     }
@@ -140,11 +174,15 @@ export function Player({
       <mesh key={skinId} ref={bodyRef} castShadow>
         <SkinGeometry shape={skin.shape} />
         <meshStandardMaterial
+          map={map}
+          // The map doubles as the emissive map, so a body lit from inside
+          // still shows its pattern instead of glowing flat.
+          emissiveMap={map}
           color={skin.color}
           emissive={skin.emissive}
-          emissiveIntensity={glow.emissiveIntensity}
-          roughness={0.25}
-          flatShading
+          emissiveIntensity={glow.emissiveIntensity * (skin.emissiveScale ?? 1)}
+          roughness={map ? 0.55 : 0.25}
+          flatShading={skin.shape !== 'ball'}
         />
       </mesh>
 
