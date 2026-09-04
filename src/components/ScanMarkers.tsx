@@ -1,16 +1,26 @@
 import type { CameraMode } from '../store/gameStore';
-import { CELL_SIZE, MARKER_RING, QUIET_ZONE, boardExtent, cellToWorld } from '../lib/maze/layout';
+import { CELL_SIZE, cellToWorld, scanExtent } from '../lib/maze/layout';
 import type { Maze, Point } from '../lib/maze/types';
 
-/** Chunky enough to see at thumbnail size, small enough not to crowd the code. */
-const MARKER_LENGTH = CELL_SIZE * 1.4;
-const MARKER_WIDTH = CELL_SIZE * 0.9;
+/**
+ * Crosshair appearance.
+ *
+ * These three numbers are the whole scannability argument, and they are
+ * covered by a decode test rather than taken on trust — see
+ * `crosshair.test.ts`, which composites exactly this blend over a rendered
+ * symbol and puts the result through a real decoder.
+ *
+ * The lines pass straight over the code, so they must never flip a module. At
+ * this opacity a light module lands around 200 of 255 and a dark one around
+ * 32: both stay comfortably on their own side of any sane threshold, and the
+ * contrast between them is barely dented.
+ */
+export const CROSSHAIR_COLOUR = '#e03a2f';
+export const CROSSHAIR_OPACITY = 0.35;
+export const CROSSHAIR_THICKNESS = CELL_SIZE * 0.25;
 
 /** Just clear of the floor, which sits at y = 0. */
 const MARKER_Y = 0.02;
-
-const PLAYER_COLOUR = '#e03a2f';
-const EXIT_COLOUR = '#1b7f3b';
 
 interface ScanMarkersProps {
   readonly maze: Maze;
@@ -19,48 +29,48 @@ interface ScanMarkersProps {
 }
 
 /**
- * Edge ticks marking the player's row and column in the top-down view.
+ * A crosshair through the player's position in the top-down view.
  *
- * Flattening the board to a black-and-white code hides the player, which is
- * the point — but it also means you cannot tell where you are. These are the
- * compromise: they say exactly which row and column you are on without
- * putting anything on the code itself.
+ * Flattening the board to black and white hides the player, which is the
+ * point of the view, but it also leaves you with no idea where you are
+ * standing. Two full-length lines solve that at a glance: you read the
+ * intersection, not the two edges it came from.
  *
- * Nothing is drawn over the symbol or inside its quiet zone. A coloured dot on
- * a light module binarises to dark and flips that module, and a mark inside
- * the quiet zone eats the blank margin a scanner needs to find the finder
- * patterns. Out here, past both, a marker costs the symbol nothing at all.
+ * They run the full width and height of the white field, so their ends stick
+ * out past the code and give the eye something to follow inwards.
  */
-export function ScanMarkers({ maze, player, cameraMode }: ScanMarkersProps): React.JSX.Element | null {
+export function ScanMarkers({
+  maze,
+  player,
+  cameraMode,
+}: ScanMarkersProps): React.JSX.Element | null {
   if (cameraMode !== 'scan') return null;
 
-  // Centre of the marker ring, measured out from the middle of the board.
-  const reach = boardExtent(maze.size) / 2 + (QUIET_ZONE + MARKER_RING / 2) * CELL_SIZE;
-
+  const span = scanExtent(maze.size);
   const [playerX, playerZ] = cellToWorld(maze.size, player);
-  const [exitX, exitZ] = cellToWorld(maze.size, maze.end);
 
   return (
     <group>
-      {/* Player: a tick above the column and one left of the row. */}
-      <mesh position={[playerX, MARKER_Y, -reach]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[MARKER_WIDTH, MARKER_LENGTH]} />
-        <meshBasicMaterial color={PLAYER_COLOUR} />
-      </mesh>
-      <mesh position={[-reach, MARKER_Y, playerZ]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[MARKER_LENGTH, MARKER_WIDTH]} />
-        <meshBasicMaterial color={PLAYER_COLOUR} />
+      {/* Along the row. */}
+      <mesh position={[0, MARKER_Y, playerZ]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[span, CROSSHAIR_THICKNESS]} />
+        <meshBasicMaterial
+          color={CROSSHAIR_COLOUR}
+          transparent
+          opacity={CROSSHAIR_OPACITY}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Exit: the same pair on the opposite edges, so the top-down view
-          still shows which corner you are walking towards. */}
-      <mesh position={[exitX, MARKER_Y, reach]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[MARKER_WIDTH, MARKER_LENGTH]} />
-        <meshBasicMaterial color={EXIT_COLOUR} />
-      </mesh>
-      <mesh position={[reach, MARKER_Y, exitZ]} rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[MARKER_LENGTH, MARKER_WIDTH]} />
-        <meshBasicMaterial color={EXIT_COLOUR} />
+      {/* Along the column. */}
+      <mesh position={[playerX, MARKER_Y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+        <planeGeometry args={[CROSSHAIR_THICKNESS, span]} />
+        <meshBasicMaterial
+          color={CROSSHAIR_COLOUR}
+          transparent
+          opacity={CROSSHAIR_OPACITY}
+          depthWrite={false}
+        />
       </mesh>
     </group>
   );
