@@ -9,8 +9,15 @@ import { SKIN, type PlayerSkinId, type SkinShape } from '../lib/render/skins';
 import type { CameraMode } from '../store/gameStore';
 
 const RADIUS = CELL_SIZE * 0.3;
-/** Sized so a rolling cube clears the floor and still fits a one-module corridor. */
-const CUBE_SIDE = CELL_SIZE * 0.52;
+/**
+ * Exactly half a cell, which is what makes the cube roll honestly.
+ *
+ * A cube tips a quarter turn per edge length travelled, not per cell, so the
+ * edge has to divide the cell for it to arrive flat on a face. At half a cell
+ * it turns twice per move and lands square every time; at any other size it
+ * would either skid or come to rest on a corner.
+ */
+const CUBE_SIDE = CELL_SIZE * 0.5;
 /** The real balls sit a shade larger, which is what makes them read as balls. */
 const BALL_RADIUS = RADIUS * 1.07;
 const ROCK_RADIUS = RADIUS * 1.15;
@@ -18,7 +25,7 @@ const ROCK_RADIUS = RADIUS * 1.15;
  * Ride height, shared by every body.
  *
  * It has to clear the furthest point of the widest shape as it turns: the
- * octahedron's vertex at 0.375 and the cube's half-diagonal at 0.368 both sit
+ * octahedron's vertex at 0.375 and the cube's half-diagonal at 0.354 both sit
  * under this, and the tallest of them still passes below the one-unit hedges.
  */
 const RESTING_Y = RADIUS * 1.4;
@@ -41,10 +48,12 @@ interface PlayerProps {
 /**
  * How far a body turns per cell travelled.
  *
- * Round bodies use the real arc length, so a ball covering one module turns
- * exactly as far as its circumference says it should — anything else reads as
- * a ball skidding. The cube instead tips a quarter turn onto its next face,
- * which is what a block does regardless of how far the cell is.
+ * Every rolling body turns by the distance it covered divided by the radius it
+ * turns on, so it never skids. For a ball that radius is its own; for a cube
+ * tipping on an edge it is half the edge, which at half a cell works out to a
+ * clean half turn — two quarter tips, landing flat.
+ *
+ * Bodies that do not roll never read this.
  */
 function rollAngle(shape: SkinShape): number {
   switch (shape) {
@@ -52,6 +61,8 @@ function rollAngle(shape: SkinShape): number {
       return CELL_SIZE / BALL_RADIUS;
     case 'rock':
       return CELL_SIZE / ROCK_RADIUS;
+    case 'cube':
+      return (CELL_SIZE / CUBE_SIDE) * (Math.PI / 2);
     default:
       return Math.PI / 2;
   }
