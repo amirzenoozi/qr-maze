@@ -123,7 +123,20 @@ Enter a URL, wait out the loading screen, and walk.
 | Swipe (touch) | Move one module |
 | `Space` | Open or close the enlarged scan card |
 | `C` | Toggle the flat top-down view (movement pauses while it is open) |
+| `N` | Switch between day and night |
 | `R` | Restart the current maze (spends a retry) |
+
+### Day and night
+
+`N`, or the button in the HUD, swaps the sky. Only the 3D world changes: the
+panels are already dark, and the top-down view and the pinned scan card are
+unlit passes that ignore lighting entirely, so neither sky can affect whether
+the code scans.
+
+Night is where the player's lantern finally does its job. The brief always
+called for a glowing sphere casting real-time shadows on the walls, but under a
+spring morning a lantern is invisible, so it had been dimmed to a glow. After
+dark it becomes the main light source and the hedges close in around it.
 
 ### Retries
 
