@@ -454,6 +454,18 @@ kbd {
   gap: 8px;
 }
 
+.hud__paused {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--panel);
+  border: 3px solid var(--danger);
+  box-shadow: 4px 4px 0 var(--shadow);
+  font-family: var(--pixel);
+  font-size: 8px;
+  line-height: 1.6;
+  color: var(--danger);
+}
+
 /* Offer the control the device actually has. A phone has no keys to press and
    a desktop has nothing to swipe, so each hides the other's instructions. */
 .hud__hint--touch {

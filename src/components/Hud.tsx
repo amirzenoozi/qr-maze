@@ -32,11 +32,12 @@ function Stat({ label, value, hint, urgent = false }: StatProps): React.JSX.Elem
  * screen — where the player actually is — stays clear.
  */
 export function Hud(): React.JSX.Element | null {
-  const { maze, moves, lives, restart, returnToStart } = useGameStore(
+  const { maze, moves, lives, cameraMode, restart, returnToStart } = useGameStore(
     useShallow((state) => ({
       maze: state.maze,
       moves: state.moves,
       lives: state.lives,
+      cameraMode: state.cameraMode,
       restart: state.restart,
       returnToStart: state.returnToStart,
     })),
@@ -78,6 +79,13 @@ export function Hud(): React.JSX.Element | null {
       </div>
 
       <div className="hud__controls">
+        {/* Say so, rather than letting a dead keypress read as a bug. */}
+        {cameraMode === 'scan' && (
+          <p className="hud__paused" role="status">
+            Top view — movement paused
+          </p>
+        )}
+
         <ul className="hud__hint">
           {/* Shown only where there is a finger to swipe with; the CSS hides
               it on a fine pointer, and hides the key rows on a coarse one. */}

@@ -203,8 +203,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   movePlayer: (deltaRow, deltaCol) => {
-    const { maze, player, won, lost } = get();
+    const { maze, player, won, lost, cameraMode } = get();
     if (!maze || won || lost) return;
+
+    // The top-down view shows the whole board and a crosshair on the player,
+    // which between them answer the question the maze is asking. Walking with
+    // that open would not be playing it. Blocked here rather than in the input
+    // hooks so keyboard and touch cannot diverge.
+    if (cameraMode === 'scan') return;
 
     const row = player.row + deltaRow;
     const col = player.col + deltaCol;

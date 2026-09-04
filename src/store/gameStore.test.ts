@@ -147,6 +147,33 @@ describe('lives', () => {
   });
 });
 
+describe('top view', () => {
+  it('refuses to move while the board is flattened', async () => {
+    await build();
+    const step = firstLegalStep();
+    useGameStore.getState().setCameraMode('scan');
+
+    useGameStore.getState().movePlayer(...step);
+
+    // The whole board and a crosshair on the player are on screen; walking
+    // with that open would be reading the answer, not solving it.
+    expect(useGameStore.getState().moves).toBe(0);
+    expect(useGameStore.getState().player).toEqual(useGameStore.getState().maze?.start);
+  });
+
+  it('moves again once the view comes back', async () => {
+    await build();
+    const step = firstLegalStep();
+    useGameStore.getState().setCameraMode('scan');
+    useGameStore.getState().movePlayer(...step);
+
+    useGameStore.getState().setCameraMode('gameplay');
+    useGameStore.getState().movePlayer(...step);
+
+    expect(useGameStore.getState().moves).toBe(1);
+  });
+});
+
 describe('board variant', () => {
   it('keeps the same maze while the player still has hearts', async () => {
     await build();
