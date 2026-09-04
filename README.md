@@ -209,11 +209,16 @@ generosity rather than four unrelated boards.
   Point a phone at it during play or after winning; it is the carved matrix,
   the same one the build step decoded to prove it works.
 - The **top-down view** (`C`) flattens the world to pure black and white so the
-  screen itself becomes a scannable code. Red ticks on the top and left edges
-  mark your row and column; green ticks on the other two mark the exit. They
-  sit in a ring *outside* the quiet zone, never on the code: a coloured dot on
-  a light module binarises to dark and flips it, and a mark inside the quiet
-  zone eats the blank margin a scanner needs to find the finder patterns.
+  screen itself becomes a scannable code. A faint red crosshair runs the full
+  width and height of the field; you are standing where the two lines meet.
+
+  The lines cross the code, so they are held at 35% opacity: a crossed light
+  module still reads about 200 of 255 and a dark one about 32, leaving both
+  well clear of any threshold. That is measured rather than assumed —
+  `src/lib/qr/crosshair.test.ts` composites the same blend over a rendered
+  symbol and decodes it, for four URLs across all four tiers from seven
+  positions each. Decoding survives to 60% opacity and first fails at 70%, so
+  the setting in use has roughly twice the margin it needs.
 
 ### Sharing a maze
 

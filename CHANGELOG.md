@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The top-down position markers are now a crosshair through the player rather
+  than ticks on the edges. The ticks were the cautious answer — they kept
+  everything off the code — but reading them meant tracing two lines by eye
+  and meeting in the middle, which is work the marker was supposed to save.
+- The crosshair crosses the code at 35% opacity, which a new decode test
+  covers directly: the same blend is composited over a rendered symbol and put
+  through a real decoder, for four URLs across all four tiers from seven
+  positions each. Decoding survives to 60% opacity and first fails at 70%, so
+  the setting in use keeps about twice the margin it needs.
+
 ## [1.7.0] - 2026-09-01
 
 ### Added
