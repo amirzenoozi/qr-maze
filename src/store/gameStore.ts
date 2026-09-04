@@ -3,7 +3,7 @@ import { buildMaze, type MazeBuildAttempt } from '../lib/maze/build';
 import { DEFAULT_DIFFICULTY, type Difficulty } from '../lib/maze/difficulty';
 import type { Maze, Point } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
-import type { TimeOfDay } from '../lib/render/daylight';
+import { timeOfDayAt, type TimeOfDay } from '../lib/render/daylight';
 import { DEFAULT_SKIN, PLAYER_SKINS, type PlayerSkinId } from '../lib/render/skins';
 
 /** Camera presentation modes. */
@@ -58,9 +58,9 @@ export interface GameState {
   /**
    * Which sky the 3D world is lit by.
    *
-   * A viewing preference, not part of a run, so nothing that resets a board
-   * touches it: restarting, rebuilding or returning to the entry screen all
-   * leave the player in the sky they chose.
+   * Starts from the visitor's local clock, then becomes a viewing preference:
+   * nothing that resets a board touches it, so restarting, rebuilding or
+   * returning to the entry screen all leave the player in the sky they chose.
    */
   readonly timeOfDay: TimeOfDay;
 
@@ -148,7 +148,8 @@ export const useGameStore = create<GameState>((set, get) => ({
   lives: LIVES_PER_URL,
   variant: Date.now(),
   cameraMode: 'gameplay',
-  timeOfDay: 'day',
+  // Opens on whichever sky matches the visitor's own clock, then stays put.
+  timeOfDay: timeOfDayAt(new Date()),
   skin: DEFAULT_SKIN,
   scanCardOpen: false,
 

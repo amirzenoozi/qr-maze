@@ -1,6 +1,23 @@
 /** Which sky the 3D world is lit by. */
 export type TimeOfDay = 'day' | 'night';
 
+/** Local hours the day sky covers, from the first to the last. */
+const DAY_STARTS_AT = 7;
+const NIGHT_STARTS_AT = 19;
+
+/**
+ * The sky to open on, read off the visitor's own clock.
+ *
+ * Only ever used for the starting value. Once the sky has been chosen it stays
+ * chosen — recomputing it as the evening arrives would overrule someone who had
+ * deliberately picked the other one, and a board relighting itself mid-run is a
+ * worse surprise than opening on the wrong sky.
+ */
+export function timeOfDayAt(date: Date): TimeOfDay {
+  const hour = date.getHours();
+  return hour >= DAY_STARTS_AT && hour < NIGHT_STARTS_AT ? 'day' : 'night';
+}
+
 export interface SkyPalette {
   /** Canvas clear colour, standing in for the sky. */
   readonly background: string;

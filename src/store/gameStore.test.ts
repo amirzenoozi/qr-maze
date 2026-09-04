@@ -1,8 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { DIRECTIONS } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
+import { timeOfDayAt } from '../lib/render/daylight';
 import { PLAYER_SKINS } from '../lib/render/skins';
 import { LIVES_PER_URL, useGameStore } from './gameStore';
+
+/**
+ * The sky the store booted with, captured before any test installs fake
+ * timers, so asserting against it cannot drift with the suite's clock.
+ */
+const BOOT_SKY = timeOfDayAt(new Date());
 
 /** Smallest symbol of the usual test set, so each build stays quick. */
 const URL = 'https://a.co/x';
@@ -208,14 +215,19 @@ describe('board variant', () => {
 });
 
 describe('time of day', () => {
+  it('opens on the sky the visitor’s clock is showing', () => {
+    expect(useGameStore.getState().timeOfDay).toBe(BOOT_SKY);
+  });
+
   it('toggles both ways', () => {
-    expect(useGameStore.getState().timeOfDay).toBe('day');
+    // Started from the clock, so the test cannot assume which sky that was.
+    const start = useGameStore.getState().timeOfDay;
 
     useGameStore.getState().toggleTimeOfDay();
-    expect(useGameStore.getState().timeOfDay).toBe('night');
+    expect(useGameStore.getState().timeOfDay).not.toBe(start);
 
     useGameStore.getState().toggleTimeOfDay();
-    expect(useGameStore.getState().timeOfDay).toBe('day');
+    expect(useGameStore.getState().timeOfDay).toBe(start);
   });
 
   it('survives everything that resets a board', async () => {
