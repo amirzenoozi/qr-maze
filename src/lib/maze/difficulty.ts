@@ -120,8 +120,8 @@ export const DIFFICULTY_CONFIG: Record<Difficulty, DifficultyConfig> = {
   },
   insane: {
     label: 'Insane',
-    blurb: 'Perfect route only. No beacon to follow.',
-    slack: 0,
+    blurb: 'Barely any slack. No beacon to follow.',
+    slack: 0.05,
     widen: 0,
     plug: 0.9,
     waypoints: 2,

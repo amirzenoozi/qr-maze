@@ -196,10 +196,14 @@ describe('difficulty', () => {
     }
   });
 
-  it('demands a perfect route on Insane and nothing less than one on Easy', () => {
-    expect(DIFFICULTY_CONFIG.insane.slack).toBe(0);
-    expect(DIFFICULTY_CONFIG.easy.slack).toBeGreaterThan(0);
-    expect(moveBudget(40, 'insane')).toBe(40);
+  it('leaves Insane almost no slack and Easy plenty', () => {
+    // Insane keeps a token margin rather than none: a single misread corner on
+    // a beaconless board should not be unrecoverable, but it must stay small
+    // enough that the route is still the point.
+    expect(DIFFICULTY_CONFIG.insane.slack).toBeGreaterThan(0);
+    expect(DIFFICULTY_CONFIG.insane.slack).toBeLessThanOrEqual(0.05);
+    expect(DIFFICULTY_CONFIG.easy.slack).toBeGreaterThan(DIFFICULTY_CONFIG.insane.slack * 4);
+    expect(moveBudget(40, 'insane')).toBe(42);
     expect(moveBudget(40, 'easy')).toBe(64);
   });
 });
