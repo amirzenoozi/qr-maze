@@ -141,27 +141,46 @@ dark it becomes the main light source and the hedges close in around it.
 
 ### Bodies
 
-Four of them, chosen on the start screen or cycled mid-run with `B`: **Firefly**,
-the blue sphere that bobs; **Ember**, a spinning octahedron; **Nova**, a
-tumbling icosahedron; and **Pixel**, a cube that rolls a quarter turn per move.
+Nine of them, chosen on the start screen or cycled mid-run with `B`.
+
+| Body | What it is | Motion |
+| --- | --- | --- |
+| Firefly | The original blue sphere | bobs |
+| Ember | A spinning octahedron | spins |
+| Nova | A cold magenta icosahedron | tumbles |
+| Pixel | A cube cut from the same stuff as the walls | tips a quarter turn per move |
+| Lava | A dark rock with molten cracks | rolls |
+| Football | Black and white panels | rolls |
+| Basketball | Orange, seams and all | rolls |
+| Pokéball | Red over white, catch button included | rolls |
+| Mars | A rusty little planet with polar caps | rolls |
 
 They are more than a recolour, because the player carries the only moving light
-on the board. Each body tints that light and trims it: Ember burns hot and
-close, so the hedges either side are lit hard and the corridor ahead falls away
-faster, while Nova is a colder pinpoint that reaches further. The trims are
+on the board. Each body tints that light and trims it: Ember and Lava burn hot
+and close, so the hedges either side are lit hard and the corridor ahead falls
+away faster, while Nova is a colder pinpoint that reaches further. The trims are
 multipliers on the sky's lantern rather than absolute values, so a body shifts
 the night without overriding how it is lit.
 
-The palettes are picked against the world rather than against each other. The
-board is green hedges and cream gravel under a blue or navy sky, so orange
+The abstract bodies are picked against the world rather than against each other.
+The board is green hedges and cream gravel under a blue or navy sky, so orange
 reads as the complement of the sky and magenta as the complement of the hedges.
 Green would have vanished into the walls.
 
-Every body is a low-poly primitive. The world is faceted everywhere else, so an
-imported model would be the one smooth, high-detail object in it. Pixel is the
-most native of the four: the hedges, the blossoms, the fence and the confetti
-are all boxes already, and rolling is the only thing here that gives movement
-any weight, since every other body slides.
+The five pictorial bodies wear an equirectangular map painted into a 64×32
+canvas and magnified with nearest-neighbour filtering, the same treatment the
+world's grass and wood get. They are coarse on purpose: the scene renders at 45%
+resolution and the body is 0.3 units across, so it reaches the screen at a few
+dozen pixels and only bold, large features survive. Lava gets the trick for
+free — its map is dark crust and bright veins, so reusing it as the emissive map
+lights the cracks and leaves the rock unlit.
+
+Nothing is an imported model. The world is faceted everywhere else, so a
+detailed mesh would be the one smooth object in it. The round bodies roll
+through the real arc length for their radius rather than a fixed turn, because
+a ball that undershoots its own circumference reads as skidding; Pixel instead
+tips a quarter turn onto its next face, which is what a block does however far
+the cell is.
 
 Like the sky, none of this can affect scanning — the player is hidden in the
 top-down view, and three.js drops its light along with it.
@@ -225,7 +244,7 @@ just the allowance:
 | Easy | direct | opens the most extra modules | +60% | on |
 | Normal | direct | opens some | +35% | on |
 | Hard | via one far corner | fills modules in | +15% | on |
-| Insane | via two far corners | fills the most in | +0% | **off** |
+| Insane | via two far corners | fills the most in | +5% | **off** |
 
 Opening modules adds branches and loops, which multiplies the ways to win.
 Filling them in is the only lever that removes alternatives — the budget is

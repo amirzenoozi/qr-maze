@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-09-04
+
+### Added
+
+- Five more player bodies, taking the roster to nine: Lava, a dark rock with
+  molten cracks; Football; Basketball; Pokeball; and Mars. Each wears an
+  equirectangular map painted into a 64x32 canvas and magnified with
+  nearest-neighbour filtering, matching the world's other textures.
+- Round bodies roll through the real arc length for their radius, so a ball
+  covering one module turns exactly as far as its circumference says it should.
+
+### Changed
+
+- Insane now allows 5% slack instead of demanding a flawless route. A single
+  misread corner on a board with no beacon should not be unrecoverable, and the
+  margin is small enough that the route is still the point. Its blurb no longer
+  claims a perfect route is required.
+
 ## [1.9.0] - 2026-09-04
 
 ### Added
@@ -315,7 +333,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.2...v1.8.0
 [1.7.2]: https://github.com/amirzenoozi/qr-maze/compare/v1.7.1...v1.7.2
