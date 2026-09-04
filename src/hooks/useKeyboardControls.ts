@@ -92,6 +92,11 @@ export function useKeyboardControls(enabled: boolean): void {
         event.preventDefault();
         useGameStore.getState().toggleCameraMode();
       }
+
+      if (event.code === 'KeyN') {
+        event.preventDefault();
+        useGameStore.getState().toggleTimeOfDay();
+      }
     };
 
     const onKeyUp = (event: KeyboardEvent): void => {

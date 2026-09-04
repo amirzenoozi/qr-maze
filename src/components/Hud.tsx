@@ -32,16 +32,19 @@ function Stat({ label, value, hint, urgent = false }: StatProps): React.JSX.Elem
  * screen — where the player actually is — stays clear.
  */
 export function Hud(): React.JSX.Element | null {
-  const { maze, moves, lives, cameraMode, restart, returnToStart } = useGameStore(
-    useShallow((state) => ({
-      maze: state.maze,
-      moves: state.moves,
-      lives: state.lives,
-      cameraMode: state.cameraMode,
-      restart: state.restart,
-      returnToStart: state.returnToStart,
-    })),
-  );
+  const { maze, moves, lives, cameraMode, timeOfDay, toggleTimeOfDay, restart, returnToStart } =
+    useGameStore(
+      useShallow((state) => ({
+        maze: state.maze,
+        moves: state.moves,
+        lives: state.lives,
+        cameraMode: state.cameraMode,
+        timeOfDay: state.timeOfDay,
+        toggleTimeOfDay: state.toggleTimeOfDay,
+        restart: state.restart,
+        returnToStart: state.returnToStart,
+      })),
+    );
 
   if (!maze) return null;
 
@@ -100,6 +103,9 @@ export function Hud(): React.JSX.Element | null {
             <kbd>C</kbd> — top view
           </li>
           <li className="hud__hint--keys">
+            <kbd>N</kbd> — day / night
+          </li>
+          <li className="hud__hint--keys">
             <kbd>R</kbd> — restart
           </li>
         </ul>
@@ -107,6 +113,11 @@ export function Hud(): React.JSX.Element | null {
         <div className="hud__actions">
           <button className="button" type="button" onClick={restart} disabled={lives === 0}>
             Restart
+          </button>
+          {/* Touch players have no keyboard, and this is a preference people
+              reach for, so it earns a button as well as the N key. */}
+          <button className="button" type="button" onClick={toggleTimeOfDay}>
+            {timeOfDay === 'day' ? 'Night' : 'Day'}
           </button>
           <button className="button" type="button" onClick={returnToStart}>
             New URL

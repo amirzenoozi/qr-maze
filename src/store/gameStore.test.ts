@@ -205,3 +205,31 @@ describe('board variant', () => {
     expect(useGameStore.getState().lives).toBe(LIVES_PER_URL);
   });
 });
+
+describe('time of day', () => {
+  it('toggles both ways', () => {
+    expect(useGameStore.getState().timeOfDay).toBe('day');
+
+    useGameStore.getState().toggleTimeOfDay();
+    expect(useGameStore.getState().timeOfDay).toBe('night');
+
+    useGameStore.getState().toggleTimeOfDay();
+    expect(useGameStore.getState().timeOfDay).toBe('day');
+  });
+
+  it('survives everything that resets a board', async () => {
+    await build();
+    useGameStore.getState().setTimeOfDay('night');
+
+    // Each of these rewrites a batch of fields, and the realistic bug is one
+    // of them quietly listing the sky among them.
+    useGameStore.getState().restart();
+    expect(useGameStore.getState().timeOfDay).toBe('night');
+
+    await build('https://example.com');
+    expect(useGameStore.getState().timeOfDay).toBe('night');
+
+    useGameStore.getState().returnToStart();
+    expect(useGameStore.getState().timeOfDay).toBe('night');
+  });
+});

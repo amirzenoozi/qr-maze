@@ -3,6 +3,7 @@ import { buildMaze, type MazeBuildAttempt } from '../lib/maze/build';
 import { DEFAULT_DIFFICULTY, type Difficulty } from '../lib/maze/difficulty';
 import type { Maze, Point } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
+import type { TimeOfDay } from '../lib/render/daylight';
 
 /** Camera presentation modes. */
 export type CameraMode = 'gameplay' | 'scan';
@@ -54,6 +55,15 @@ export interface GameState {
   readonly cameraMode: CameraMode;
 
   /**
+   * Which sky the 3D world is lit by.
+   *
+   * A viewing preference, not part of a run, so nothing that resets a board
+   * touches it: restarting, rebuilding or returning to the entry screen all
+   * leave the player in the sky they chose.
+   */
+  readonly timeOfDay: TimeOfDay;
+
+  /**
    * Whether the corner badge is enlarged to its centred, easily scannable
    * size. It is the same element either way, so this is a presentation flag
    * rather than a separate dialog.
@@ -76,6 +86,8 @@ export interface GameState {
   returnToStart: () => void;
   setCameraMode: (mode: CameraMode) => void;
   toggleCameraMode: () => void;
+  setTimeOfDay: (time: TimeOfDay) => void;
+  toggleTimeOfDay: () => void;
   openScanCard: () => void;
   closeScanCard: () => void;
   toggleScanCard: () => void;
@@ -124,6 +136,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   lives: LIVES_PER_URL,
   variant: Date.now(),
   cameraMode: 'gameplay',
+  timeOfDay: 'day',
   scanCardOpen: false,
 
   setDifficulty: (difficulty) => set({ difficulty }),
@@ -284,6 +297,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   toggleCameraMode: () =>
     set({ cameraMode: get().cameraMode === 'gameplay' ? 'scan' : 'gameplay' }),
+
+  setTimeOfDay: (time) => set({ timeOfDay: time }),
+
+  toggleTimeOfDay: () => set({ timeOfDay: get().timeOfDay === 'day' ? 'night' : 'day' }),
 
   openScanCard: () => set({ scanCardOpen: true }),
 
