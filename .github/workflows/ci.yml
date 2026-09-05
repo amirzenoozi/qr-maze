@@ -1,0 +1,42 @@
+# Checks every branch and every pull request.
+#
+# The deploy workflow only fires on a version tag, and its verify job exists
+# to gate a release rather than to review a branch. Without this, work on
+# main goes unchecked until someone cuts a tag, which is the worst possible
+# moment to discover a broken test.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+    # Tags are already covered by the deploy workflow's verify job. Running
+    # both would double every release for no extra signal.
+    tags-ignore: ['**']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  # A newer commit supersedes the one before it on the same branch, so an
+  # obsolete run is cancelled rather than left to finish.
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      # Building here as well catches the failures type checking cannot see,
+      # such as an import that only resolves in the dev server.
+      - run: npm run build
