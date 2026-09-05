@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Your body, difficulty and sky are remembered between visits.
+- A personal best per board, kept per URL and per tier, shown in the HUD and
+  called out on the win panel when you beat it. Equalling a best does not count
+  as beating it.
+- Walking into a hedge now knocks the body against it and rebounds. A refused
+  move was previously indistinguishable from a dropped keypress.
+- A CI workflow running the checks on every push and pull request. Deployment
+  still only happens on a version tag.
+- An all-rights-reserved licence.
+
+### Changed
+
+- The camera now sits behind the player and looks towards the exit. It used to
+  stand between the two and look back over ground already crossed, which meant
+  the beacon marking the exit — the thing Insane switches off — had never been
+  visible in normal play. The keyboard and touch axes turned with it, and both
+  are now derived from a single constant so they cannot drift apart again.
+- The loading screen holds for about a second instead of five to seven. Carving
+  takes well under a fifth of one, so the rest was staging, charged to every
+  play and every retry.
+
+
 ## [1.11.0] - 2026-09-04
 
 ### Added

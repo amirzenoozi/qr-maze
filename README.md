@@ -115,7 +115,14 @@ entirely determined by where the QR data happened to leave gaps.
 
 ## Playing
 
-Enter a URL, wait out the loading screen, and walk.
+Enter a URL and walk. The camera trails you from behind and looks the way you
+are going, so the beacon over the exit is in shot from a long way off; every
+control is read as a direction on the screen rather than a row or a column,
+which is why they still make sense however the view is pointed.
+
+Walking into a hedge costs nothing. It is not silent, though — the body knocks
+against it and rebounds, so a refused move is never mistaken for a key that
+never arrived.
 
 | Input | Action |
 |-------|--------|
@@ -126,6 +133,19 @@ Enter a URL, wait out the loading screen, and walk.
 | `N` | Switch between day and night |
 | `B` | Change the player's body |
 | `R` | Restart the current maze (spends a retry) |
+
+### What is remembered
+
+Your body, tier and sky survive a reload, and so does the fewest moves you have
+ever solved a board in. Records are kept per URL *and* per tier, because the
+tiers do not share a board — a harder tier bends the corridor and fills squares
+back in, so its best is not comparable. The variant is deliberately not part of
+the key: the maze re-routes on every visit, and a record that reset with it
+would never be worth beating.
+
+Everything lives in `localStorage`, nothing leaves the browser, and there is no
+account to make. Storage that is unavailable — private mode, blocked cookies —
+is treated as "no preference yet" rather than as an error.
 
 ### Day and night
 
@@ -399,6 +419,7 @@ src/
 │   ├── render/
 │   │   ├── pixelTextures.ts  procedural pixel-art textures (grass, wood, bark…)
 │   │   └── random.ts         seeded PRNG so scenery never reshuffles
+│   ├── persist.ts          remembered settings and per-board records
 │   └── share.ts            play links, PNG download, system share sheet
 │
 ├── store/gameStore.ts      zustand: maze, player, phase, camera, scan card
@@ -424,7 +445,8 @@ src/
 
 Everything under `lib/qr/` and `lib/maze/` is pure and DOM-free, which is why
 the whole QR pipeline is testable in Node without a headless browser.
-`lib/share.ts` is the one exception — it is browser plumbing by definition.
+`lib/share.ts` and `lib/persist.ts` are the exceptions — both are browser
+plumbing by definition.
 
 ---
 
@@ -514,6 +536,10 @@ The suite covers the parts where being wrong is silent:
   leaves the bottom-right corner free
 - the start always lands on the first row or column, at `row + col == 7`
 - carving never opens a reserved module, and always produces a solvable maze
+- the controls and the camera agree about which way is forward, which is the
+  one pairing here whose failure is completely silent
+- a refused move raises a fresh knock and still costs nothing
+- a personal best survives a restart, and equalling one is not beating it
 - carving is minimal, checked against a hand-built grid with a known answer
 - route counting matches `C(10,5) = 252` on an open 6×6 grid
 - untouched and carved symbols both decode back to their original URL
@@ -556,6 +582,7 @@ manual runs.
 
 ## License
 
-No license has been chosen yet, so default copyright applies.
+All rights reserved. See [LICENSE](LICENSE) — reading the source here is not a
+licence to use it.
 
 Built by [@amirzenoozi](https://github.com/amirzenoozi).
