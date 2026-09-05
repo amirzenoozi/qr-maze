@@ -261,17 +261,19 @@ describe('world theme', () => {
   });
 
   it('survives everything that resets a board', async () => {
+    // Any offered world other than the one it opens on.
+    const chosen = THEMES[1];
     await build();
-    useGameStore.getState().setTheme('neon');
+    useGameStore.getState().setTheme(chosen);
 
     useGameStore.getState().restart();
-    expect(useGameStore.getState().theme).toBe('neon');
+    expect(useGameStore.getState().theme).toBe(chosen);
 
     await build('https://example.com');
-    expect(useGameStore.getState().theme).toBe('neon');
+    expect(useGameStore.getState().theme).toBe(chosen);
 
     useGameStore.getState().returnToStart();
-    expect(useGameStore.getState().theme).toBe('neon');
+    expect(useGameStore.getState().theme).toBe(chosen);
   });
 });
 

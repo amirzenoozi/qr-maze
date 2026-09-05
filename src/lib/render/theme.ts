@@ -17,8 +17,16 @@ import type { SkyPalette, TimeOfDay } from './daylight';
 /** Which world the board is dressed as. */
 export type ThemeId = 'park' | 'neon' | 'snow' | 'circuit' | 'desert';
 
-/** Selection order on the start screen, and the order `T` cycles through. */
-export const THEMES: readonly ThemeId[] = ['park', 'neon', 'snow', 'circuit', 'desert'];
+/**
+ * Selection order on the start screen, and the order `T` cycles through.
+ *
+ * Deliberately not every world in `THEME`. Neon and Circuit are built and
+ * tested but withheld from the picker, so unlisting one is a single-line
+ * change rather than a deletion and a later rewrite. A stored preference for
+ * a withheld world no longer validates, so anyone holding one falls back to
+ * the default on their next visit.
+ */
+export const THEMES: readonly ThemeId[] = ['park', 'snow', 'desert'];
 
 /** The world the game has always opened in. */
 export const DEFAULT_THEME: ThemeId = 'park';

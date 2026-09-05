@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { DEFAULT_THEME, THEME, THEMES, type Surface } from './theme';
+import { DEFAULT_THEME, THEME, THEMES, type Surface, type ThemeId } from './theme';
+
+/**
+ * Every world that exists, including any withheld from the picker. The
+ * structural checks run over these rather than over `THEMES`, so a world that
+ * is built but not currently offered cannot quietly rot.
+ */
+const ALL = Object.keys(THEME) as ThemeId[];
 
 /**
  * Finder patterns are 7 modules across and a landmark stands in the middle of
@@ -25,18 +32,23 @@ function stubCanvas(): void {
   };
 }
 
-function surfaces(themeId: (typeof THEMES)[number]): Surface[] {
+function surfaces(themeId: ThemeId): Surface[] {
   return Object.values(THEME[themeId].surfaces);
 }
 
 describe('theme catalogue', () => {
-  it('lists every theme exactly once, with the default among them', () => {
+  it('offers each world at most once, with the default among them', () => {
     expect(new Set(THEMES).size).toBe(THEMES.length);
     expect(THEMES).toContain(DEFAULT_THEME);
-    expect(Object.keys(THEME).sort()).toEqual([...THEMES].sort());
   });
 
-  it.each(THEMES)('%s gives every surface a usable palette', (themeId) => {
+  it('only offers worlds that exist', () => {
+    // The picker may be a subset of the record — a world can be built and
+    // withheld — but it can never name one that is not there.
+    for (const themeId of THEMES) expect(ALL).toContain(themeId);
+  });
+
+  it.each(ALL)('%s gives every surface a usable palette', (themeId) => {
     for (const surface of surfaces(themeId)) {
       // `flat` and `grid` paint from `base[0]` alone, so an empty palette is
       // an exception rather than a blank texture.
@@ -47,7 +59,7 @@ describe('theme catalogue', () => {
     }
   });
 
-  it.each(THEMES)('%s paints without throwing', async (themeId) => {
+  it.each(ALL)('%s paints without throwing', async (themeId) => {
     stubCanvas();
     const { getPixelTextures } = await import('./pixelTextures');
 
@@ -57,7 +69,7 @@ describe('theme catalogue', () => {
     expect(() => getPixelTextures(themeId)).not.toThrow();
   });
 
-  it.each(THEMES)('%s keeps its landmark inside the finder pattern', (themeId) => {
+  it.each(ALL)('%s keeps its landmark inside the finder pattern', (themeId) => {
     const { landmark } = THEME[themeId].decor;
 
     expect(landmark.trunkWidth).toBeGreaterThan(0);
@@ -73,12 +85,12 @@ describe('theme catalogue', () => {
     }
   });
 
-  it.each(THEMES)('%s stacks its landmark tiers upwards', (themeId) => {
+  it.each(ALL)('%s stacks its landmark tiers upwards', (themeId) => {
     const heights = THEME[themeId].decor.landmark.tiers.map((tier) => tier.y);
     expect([...heights].sort((a, b) => a - b)).toEqual(heights);
   });
 
-  it.each(THEMES)('%s scatters a sane share of the blocks', (themeId) => {
+  it.each(ALL)('%s scatters a sane share of the blocks', (themeId) => {
     const { scatter } = THEME[themeId].decor;
     expect(scatter.density).toBeGreaterThanOrEqual(0);
     expect(scatter.density).toBeLessThanOrEqual(1);
@@ -89,7 +101,7 @@ describe('theme catalogue', () => {
     if (scatter.density > 0) expect(scatter.tints.length).toBeGreaterThan(0);
   });
 
-  it.each(THEMES)('%s ships both skies', (themeId) => {
+  it.each(ALL)('%s ships both skies', (themeId) => {
     for (const sky of [THEME[themeId].sky.day, THEME[themeId].sky.night]) {
       expect(sky.background).toMatch(HEX);
       expect(sky.glow.intensity).toBeGreaterThan(0);
@@ -97,7 +109,7 @@ describe('theme catalogue', () => {
     }
   });
 
-  it.each(THEMES)('%s marks the exit somehow', (themeId) => {
+  it.each(ALL)('%s marks the exit somehow', (themeId) => {
     const { exit, start } = THEME[themeId].decor;
     // The beam is the only marker visible over a wall, so its colour has to be
     // real even on a theme that flies no flag.
