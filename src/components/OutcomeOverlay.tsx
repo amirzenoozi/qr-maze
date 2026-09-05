@@ -1,4 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
+import { recordKey } from '../lib/persist';
 import { DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { useGameStore } from '../store/gameStore';
 
@@ -20,18 +21,21 @@ const LETTER_STAGGER_MS = 60;
  * around rather than being locked into a full-screen takeover.
  */
 export function OutcomeOverlay(): React.JSX.Element | null {
-  const { maze, moves, won, lost, lives, restart, returnToStart, openScanCard } = useGameStore(
-    useShallow((state) => ({
-      maze: state.maze,
-      moves: state.moves,
-      won: state.won,
-      lost: state.lost,
-      lives: state.lives,
-      restart: state.restart,
-      returnToStart: state.returnToStart,
-      openScanCard: state.openScanCard,
-    })),
-  );
+  const { maze, moves, won, lost, lives, improved, records, restart, returnToStart, openScanCard } =
+    useGameStore(
+      useShallow((state) => ({
+        maze: state.maze,
+        moves: state.moves,
+        won: state.won,
+        lost: state.lost,
+        lives: state.lives,
+        improved: state.improved,
+        records: state.records,
+        restart: state.restart,
+        returnToStart: state.returnToStart,
+        openScanCard: state.openScanCard,
+      })),
+    );
 
   if (!maze || (!won && !lost)) return null;
 
@@ -41,19 +45,28 @@ export function OutcomeOverlay(): React.JSX.Element | null {
   // A replay after a win is free, so a solved board always offers one. Only a
   // loss with no hearts left is the end of the road.
   const spent = lives === 0 && !won;
+  const record = records[recordKey(maze.url, maze.difficulty)];
 
   const title = won ? 'SOLVED!' : spent ? 'GAME OVER' : 'OUT OF MOVES';
 
+  // A new best outranks a plain completion in the eyebrow, but not a perfect
+  // route: you cannot beat the shortest route there is, only match it.
   const eyebrow = won
     ? perfect
       ? 'Perfect route'
-      : 'Maze complete'
+      : improved
+        ? 'New personal best'
+        : 'Maze complete'
     : `${DIFFICULTY_CONFIG[maze.difficulty].label} — budget spent`;
 
   const summary = won
     ? perfect
       ? `You walked the shortest route there is — ${numberFormat.format(moves)} moves.`
-      : `${numberFormat.format(moves)} moves. The shortest route is ${shortest}.`
+      : improved
+        ? `${numberFormat.format(moves)} moves — your best yet on this board. The shortest route is ${shortest}.`
+        : `${numberFormat.format(moves)} moves. Your best is ${
+            record ? numberFormat.format(record.best) : shortest
+          }, the shortest route is ${shortest}.`
     : spent
       ? `All ${numberFormat.format(
           maze.moveBudget,

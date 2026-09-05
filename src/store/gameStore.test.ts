@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { recordKey } from '../lib/persist';
 import { DIRECTIONS } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
 import { timeOfDayAt } from '../lib/render/daylight';
@@ -270,5 +271,138 @@ describe('player skin', () => {
 
     useGameStore.getState().returnToStart();
     expect(useGameStore.getState().skin).toBe('pixel');
+  });
+});
+
+describe('refused moves', () => {
+  it('raises a fresh knock every time the board says no', async () => {
+    await build();
+    const { maze, player } = useGameStore.getState();
+    if (!maze) throw new Error('no maze');
+
+    // A direction that is either off the board or into a hedge.
+    const blocked = DIRECTIONS.find(([deltaRow, deltaCol]) => {
+      const row = player.row + deltaRow;
+      const col = player.col + deltaCol;
+      if (row < 0 || col < 0 || row >= maze.size || col >= maze.size) return true;
+      return maze.modules[idx(maze.size, row, col)] === 1;
+    });
+    if (!blocked) throw new Error('start has no wall to bump');
+
+    const before = useGameStore.getState().bump.nonce;
+    useGameStore.getState().movePlayer(blocked[0], blocked[1]);
+
+    const after = useGameStore.getState();
+    expect(after.bump.nonce).toBe(before + 1);
+    expect(after.bump.deltaRow).toBe(blocked[0]);
+    expect(after.bump.deltaCol).toBe(blocked[1]);
+    // Refused, so it stays free.
+    expect(after.moves).toBe(0);
+    expect(after.player).toEqual(player);
+
+    // Twice against the same hedge has to read as two knocks, not one.
+    useGameStore.getState().movePlayer(blocked[0], blocked[1]);
+    expect(useGameStore.getState().bump.nonce).toBe(before + 2);
+  });
+
+  it('stays quiet when a move actually lands', async () => {
+    await build();
+    const before = useGameStore.getState().bump.nonce;
+
+    const [deltaRow, deltaCol] = firstLegalStep();
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+
+    expect(useGameStore.getState().bump.nonce).toBe(before);
+    expect(useGameStore.getState().moves).toBe(1);
+  });
+});
+
+describe('personal records', () => {
+  /** Drop the player onto a light cell next to the exit. */
+  function standByTheExit(): readonly [number, number] {
+    const { maze } = useGameStore.getState();
+    if (!maze) throw new Error('no maze');
+
+    for (const [deltaRow, deltaCol] of DIRECTIONS) {
+      const row = maze.end.row - deltaRow;
+      const col = maze.end.col - deltaCol;
+      if (row < 0 || col < 0 || row >= maze.size || col >= maze.size) continue;
+      if (maze.modules[idx(maze.size, row, col)] === 1) continue;
+      useGameStore.setState({ player: { row, col } });
+      return [deltaRow, deltaCol];
+    }
+    throw new Error('exit has no open neighbour');
+  }
+
+  it('records the first solve and calls it an improvement', async () => {
+    await build();
+    const { maze } = useGameStore.getState();
+    if (!maze) throw new Error('no maze');
+
+    const [deltaRow, deltaCol] = standByTheExit();
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+
+    const after = useGameStore.getState();
+    expect(after.won).toBe(true);
+    expect(after.improved).toBe(true);
+    expect(after.records[recordKey(maze.url, maze.difficulty)]).toEqual({
+      best: after.moves,
+      solved: 1,
+    });
+  });
+
+  it('counts a slower second solve without letting it take the best', async () => {
+    await build();
+    const { maze } = useGameStore.getState();
+    if (!maze) throw new Error('no maze');
+
+    let [deltaRow, deltaCol] = standByTheExit();
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+    const best = useGameStore.getState().moves;
+
+    // A replay after a win is free, so this costs no heart.
+    useGameStore.getState().restart();
+    [deltaRow, deltaCol] = standByTheExit();
+    useGameStore.setState({ moves: best + 9 });
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+
+    const after = useGameStore.getState();
+    expect(after.won).toBe(true);
+    expect(after.improved).toBe(false);
+    expect(after.records[recordKey(maze.url, maze.difficulty)]).toEqual({ best, solved: 2 });
+  });
+
+  it('keeps a record per tier, since the tiers are different boards', async () => {
+    await build();
+    const first = useGameStore.getState().maze;
+    if (!first) throw new Error('no maze');
+
+    let [deltaRow, deltaCol] = standByTheExit();
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+
+    useGameStore.getState().setDifficulty('insane');
+    await build();
+    [deltaRow, deltaCol] = standByTheExit();
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+
+    const { records } = useGameStore.getState();
+    expect(records[recordKey(first.url, 'normal')]).toBeDefined();
+    expect(records[recordKey(first.url, 'insane')]).toBeDefined();
+  });
+
+  it('forgets nothing when a board is restarted or abandoned', async () => {
+    await build();
+    const { maze } = useGameStore.getState();
+    if (!maze) throw new Error('no maze');
+
+    const [deltaRow, deltaCol] = standByTheExit();
+    useGameStore.getState().movePlayer(deltaRow, deltaCol);
+
+    useGameStore.getState().restart();
+    expect(useGameStore.getState().records[recordKey(maze.url, maze.difficulty)]).toBeDefined();
+    expect(useGameStore.getState().improved).toBe(false);
+
+    useGameStore.getState().returnToStart();
+    expect(useGameStore.getState().records[recordKey(maze.url, maze.difficulty)]).toBeDefined();
   });
 });

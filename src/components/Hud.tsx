@@ -1,4 +1,5 @@
 import { useShallow } from 'zustand/react/shallow';
+import { recordKey } from '../lib/persist';
 import { DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { ROUTE_COUNT_CAP } from '../lib/maze/types';
 import { LIVES_PER_URL, useGameStore } from '../store/gameStore';
@@ -32,12 +33,23 @@ function Stat({ label, value, hint, urgent = false }: StatProps): React.JSX.Elem
  * screen — where the player actually is — stays clear.
  */
 export function Hud(): React.JSX.Element | null {
-  const { maze, moves, lives, cameraMode, timeOfDay, toggleTimeOfDay, restart, returnToStart } =
+  const {
+    maze,
+    moves,
+    lives,
+    records,
+    cameraMode,
+    timeOfDay,
+    toggleTimeOfDay,
+    restart,
+    returnToStart,
+  } =
     useGameStore(
       useShallow((state) => ({
         maze: state.maze,
         moves: state.moves,
         lives: state.lives,
+        records: state.records,
         cameraMode: state.cameraMode,
         timeOfDay: state.timeOfDay,
         toggleTimeOfDay: state.toggleTimeOfDay,
@@ -50,6 +62,7 @@ export function Hud(): React.JSX.Element | null {
 
   const { analysis } = maze;
   const left = Math.max(0, maze.moveBudget - moves);
+  const record = records[recordKey(maze.url, maze.difficulty)];
   const routes = analysis.routeCountSaturated
     ? `${numberFormat.format(ROUTE_COUNT_CAP)}+`
     : numberFormat.format(analysis.shortestRouteCount);
@@ -70,9 +83,20 @@ export function Hud(): React.JSX.Element | null {
           urgent={left <= maze.moveBudget * LOW_BUDGET}
         />
         <Stat
-          label="Best"
+          label="Shortest"
           value={analysis.shortestLength === null ? '—' : `${analysis.shortestLength} moves`}
           hint="Length of a shortest route"
+        />
+        <Stat
+          label="Your best"
+          value={record ? `${numberFormat.format(record.best)} moves` : '—'}
+          hint={
+            record
+              ? `Solved ${numberFormat.format(record.solved)} ${
+                  record.solved === 1 ? 'time' : 'times'
+                } on ${DIFFICULTY_CONFIG[maze.difficulty].label}`
+              : 'Not solved yet on this tier'
+          }
         />
         <Stat
           label="Winning routes"
