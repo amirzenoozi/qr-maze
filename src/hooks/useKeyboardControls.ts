@@ -1,16 +1,23 @@
 import { useEffect } from 'react';
+import { SCREEN_STEPS } from '../lib/maze/layout';
 import { useGameStore } from '../store/gameStore';
 
-/** One grid step per axis, keyed by `KeyboardEvent.code`. */
+/**
+ * One grid step per axis, keyed by `KeyboardEvent.code`.
+ *
+ * Each key is bound to a direction on screen rather than to a row or column
+ * outright, so pressing up always walks up the screen no matter which way the
+ * camera is pointed.
+ */
 const MOVE_KEYS: Record<string, readonly [number, number]> = {
-  ArrowUp: [-1, 0],
-  KeyW: [-1, 0],
-  ArrowDown: [1, 0],
-  KeyS: [1, 0],
-  ArrowLeft: [0, -1],
-  KeyA: [0, -1],
-  ArrowRight: [0, 1],
-  KeyD: [0, 1],
+  ArrowUp: SCREEN_STEPS.up,
+  KeyW: SCREEN_STEPS.up,
+  ArrowDown: SCREEN_STEPS.down,
+  KeyS: SCREEN_STEPS.down,
+  ArrowLeft: SCREEN_STEPS.left,
+  KeyA: SCREEN_STEPS.left,
+  ArrowRight: SCREEN_STEPS.right,
+  KeyD: SCREEN_STEPS.right,
 };
 
 /**

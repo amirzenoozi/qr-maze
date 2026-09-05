@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { SCREEN_STEPS } from '../lib/maze/layout';
 import { useGameStore } from '../store/gameStore';
 
 /**
@@ -68,10 +69,13 @@ export function useTouchControls(enabled: boolean): void {
       if (Math.max(absX, absY) < SWIPE_MIN_PX) return;
 
       // The dominant axis wins outright, so a diagonal flick still resolves to
-      // a single legal move instead of doing nothing.
+      // a single legal move instead of doing nothing. Swipes are read as
+      // screen directions, the same as the keys, so both follow the camera.
       const { movePlayer } = useGameStore.getState();
-      if (absX > absY) movePlayer(0, deltaX > 0 ? 1 : -1);
-      else movePlayer(deltaY > 0 ? 1 : -1, 0);
+      const [deltaRow, deltaCol] = absX > absY
+        ? (deltaX > 0 ? SCREEN_STEPS.right : SCREEN_STEPS.left)
+        : (deltaY > 0 ? SCREEN_STEPS.down : SCREEN_STEPS.up);
+      movePlayer(deltaRow, deltaCol);
     };
 
     // Nothing is bound while the scan card is up: swallowing touchmove there

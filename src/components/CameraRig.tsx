@@ -4,12 +4,18 @@
 import { useFrame, useThree } from '@react-three/fiber';
 import { useRef } from 'react';
 import * as THREE from 'three';
-import { cellToWorld, scanExtent } from '../lib/maze/layout';
+import { CAMERA_SIDE, cellToWorld, scanExtent } from '../lib/maze/layout';
 import type { Maze, Point } from '../lib/maze/types';
 import type { CameraMode } from '../store/gameStore';
 
-/** Third-person offset from the player, in world units. */
-const GAMEPLAY_OFFSET = new THREE.Vector3(0, 9.5, 10);
+/**
+ * Third-person offset from the player, in world units.
+ *
+ * `CAMERA_SIDE` decides which end of the board this trails from, and the same
+ * constant drives the control mapping, so the two cannot disagree about which
+ * way is forward.
+ */
+const GAMEPLAY_OFFSET = new THREE.Vector3(0, 9.5, 10 * CAMERA_SIDE);
 const GAMEPLAY_FOV = 50;
 
 /**
