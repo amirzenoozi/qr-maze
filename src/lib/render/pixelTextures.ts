@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { mulberry32 } from '../random';
+import { THEME, type Surface, type SurfaceStyle, type ThemeId } from './theme';
 
 /**
  * Procedural pixel-art textures.
@@ -7,11 +8,12 @@ import { mulberry32 } from '../random';
  * Every texture is painted into a tiny canvas (16x16 or smaller) and magnified
  * with `NearestFilter`, so what reaches the screen is honest pixel art rather
  * than a blurred photograph. Generating them in code keeps the project free of
- * binary assets and lets the palette live next to the scene that uses it.
+ * binary assets and lets the palettes live in `theme.ts` next to the furniture
+ * they are painted to match.
  *
- * The palette is a bright spring morning. Gameplay colour is free to be as
- * light as it likes: scan mode swaps every material for flat black and white,
- * so nothing here can affect whether the symbol decodes.
+ * Colour is free to be anything a theme wants. Scan mode swaps every material
+ * for flat black and white and unmounts the decoration, so nothing painted
+ * here can affect whether the symbol decodes.
  */
 
 /** Pick an entry from a palette using `random`. */
@@ -23,30 +25,10 @@ type Painter = (
   context: CanvasRenderingContext2D,
   size: number,
   random: () => number,
+  surface: Surface,
 ) => void;
 
-/** Paint a texture and wrap it with pixel-art-appropriate filtering. */
-function createTexture(size: number, seed: number, paint: Painter): THREE.Texture {
-  const canvas = document.createElement('canvas');
-  canvas.width = size;
-  canvas.height = size;
-
-  const context = canvas.getContext('2d');
-  if (!context) throw new Error('2D canvas context unavailable.');
-
-  paint(context, size, mulberry32(seed));
-
-  const texture = new THREE.CanvasTexture(canvas);
-  // Nearest filtering on both axes is what makes the pixels stay square.
-  texture.magFilter = THREE.NearestFilter;
-  texture.minFilter = THREE.NearestMipmapNearestFilter;
-  texture.colorSpace = THREE.SRGBColorSpace;
-  texture.wrapS = THREE.RepeatWrapping;
-  texture.wrapT = THREE.RepeatWrapping;
-  return texture;
-}
-
-/** Fill every cell from a palette, one flat colour per pixel. */
+/** Fill every cell from the base palette, one flat colour per pixel. */
 function speckle(
   context: CanvasRenderingContext2D,
   size: number,
@@ -61,148 +43,239 @@ function speckle(
   }
 }
 
-// Repeated entries bias the result toward the base colour; `pick` is uniform.
-const GRASS = ['#7cc24a', '#7cc24a', '#7cc24a', '#8ed455', '#6cb03e', '#9ade63'];
-const HEDGE = ['#63ab3c', '#63ab3c', '#579934', '#6fb844'];
-const GRAVEL = ['#ebe3c6', '#ebe3c6', '#ebe3c6', '#f2ecd6', '#ddd4b2', '#f7f2e2'];
-const BARK = ['#8a6136', '#8a6136', '#74502c', '#9c7245'];
-const LEAF = ['#5fb63f', '#5fb63f', '#5fb63f', '#6fc94b', '#52a336', '#82dc5c'];
-const WOOD = ['#a56c39', '#a56c39', '#a56c39', '#b57c46', '#915c2e', '#8a5529'];
+/** Flat noise and nothing else. Bark, and anything wanting plain grain. */
+const paintSpeckle: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
 
-/** Sunlit grass on top of a hedge block, with a few taller blades. */
-const paintGrassTop: Painter = (context, size, random) => {
-  speckle(context, size, random, GRASS);
+  // A few darker seams stop plain noise from reading as static.
+  for (let x = 1; x < size; x += 4) {
+    context.fillStyle = surface.dark;
+    context.fillRect(x, 0, 1, size);
+  }
+};
 
-  // Scattered tufts read as blades once magnified.
+/** Noise plus scattered tufts, which read as blades once magnified. */
+const paintTufted: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
+
   for (let i = 0; i < 10; i++) {
     const x = Math.floor(random() * size);
     const y = Math.floor(random() * size);
-    context.fillStyle = random() > 0.5 ? '#5da337' : '#a6e874';
+    context.fillStyle = random() > 0.5 ? surface.dark : surface.light;
     context.fillRect(x, y, 1, Math.min(2, size - y));
   }
 };
 
-/** Hedge flank: vertical streaks suggest dense foliage without noise. */
-const paintHedgeSide: Painter = (context, size, random) => {
-  speckle(context, size, random, HEDGE);
+/** Vertical streaks suggest dense foliage or panelling without noise. */
+const paintStreaked: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
 
   for (let x = 0; x < size; x += 3) {
-    context.fillStyle = random() > 0.5 ? '#549632' : '#79c04d';
+    context.fillStyle = random() > 0.5 ? surface.dark : surface.light;
     context.fillRect(x, 0, 1, size);
   }
 
-  // A lighter lip along the top edge catches the morning sun.
-  context.fillStyle = '#8ed455';
-  context.fillRect(0, 0, size, 1);
+  // A lighter lip along the top edge catches the low sun.
+  if (surface.edge) {
+    context.fillStyle = surface.edge;
+    context.fillRect(0, 0, size, 1);
+  }
 };
 
-/** Gravel park path. Light and warm, like sunlit stone. */
-const paintPath: Painter = (context, size, random) => {
-  speckle(context, size, random, GRAVEL);
+/** Noise plus sparse grains, kept small so tiling shows no seam. */
+const paintGrains: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
 
-  // Sparse pebbles, kept small so tiling does not produce visible seams.
   for (let i = 0; i < 6; i++) {
     const x = Math.floor(random() * (size - 1));
     const y = Math.floor(random() * (size - 1));
-    context.fillStyle = '#cdc39d';
+    context.fillStyle = surface.dark;
     context.fillRect(x, y, 1, 1);
   }
 };
 
-/** Tree trunk bark. */
-const paintBark: Painter = (context, size, random) => {
-  speckle(context, size, random, BARK);
+/** Clustered highlights and optional specks: a canopy, not uniform static. */
+const paintClumped: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
 
-  for (let x = 1; x < size; x += 4) {
-    context.fillStyle = '#6b4a2a';
-    context.fillRect(x, 0, 1, size);
-  }
-};
-
-/** Tree canopy foliage, with a scatter of white spring blossom. */
-const paintLeaves: Painter = (context, size, random) => {
-  speckle(context, size, random, LEAF);
-
-  // Clustered highlights so the canopy does not look like uniform static.
   for (let i = 0; i < 8; i++) {
     const x = Math.floor(random() * (size - 2));
     const y = Math.floor(random() * (size - 2));
-    context.fillStyle = random() > 0.5 ? '#8ae05f' : '#4a9531';
+    context.fillStyle = random() > 0.5 ? surface.light : surface.dark;
     context.fillRect(x, y, 2, 2);
   }
 
-  for (let i = 0; i < 5; i++) {
-    context.fillStyle = random() > 0.5 ? '#fdf3ff' : '#ffd6ec';
-    context.fillRect(Math.floor(random() * size), Math.floor(random() * size), 1, 1);
+  const specks = surface.specks;
+  if (specks?.length) {
+    for (let i = 0; i < 5; i++) {
+      context.fillStyle = pick(random, specks);
+      context.fillRect(Math.floor(random() * size), Math.floor(random() * size), 1, 1);
+    }
   }
 };
 
 /**
- * A single blossom, drawn as petals around a centre with a transparent
- * background so the quad reads as a flower rather than a square.
- */
-const paintBlossom: Painter = (context, size, random) => {
-  const half = size / 2;
-  const petal = pick(random, ['#ffffff', '#ffd9ec', '#ffe066', '#d9c2ff', '#ff9d9d']);
-
-  context.clearRect(0, 0, size, size);
-
-  // Plus-shaped petal arrangement: the most legible flower at 8px.
-  context.fillStyle = petal;
-  context.fillRect(half - 2, half - 1, 4, 2);
-  context.fillRect(half - 1, half - 2, 2, 4);
-
-  context.fillStyle = '#ffd54a';
-  context.fillRect(half - 1, half - 1, 2, 2);
-};
-
-/**
- * Weathered fence timber. Grain runs along the U axis, so a rail stretched
+ * Weathered timber. Grain runs along the U axis, so a rail stretched
  * lengthways shows the boards running with it.
  */
-const paintWood: Painter = (context, size, random) => {
-  speckle(context, size, random, WOOD);
+const paintPlanks: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
 
   // Darker seams split the surface into separate boards.
-  for (let y = 0; y < size; y += 5) {
-    context.fillStyle = '#71441f';
-    context.fillRect(0, y, size, 1);
+  if (surface.edge) {
+    for (let y = 0; y < size; y += 5) {
+      context.fillStyle = surface.edge;
+      context.fillRect(0, y, size, 1);
+    }
   }
 
   // Short streaks read as grain once magnified.
   for (let i = 0; i < 10; i++) {
     const x = Math.floor(random() * (size - 3));
     const y = Math.floor(random() * size);
-    context.fillStyle = random() > 0.5 ? '#8a5529' : '#c08c55';
+    context.fillStyle = random() > 0.5 ? surface.dark : surface.light;
     context.fillRect(x, y, 3, 1);
   }
 
-  // A knot, so tiling does not read as a regular weave.
-  context.fillStyle = '#6b3f1c';
-  context.fillRect(
-    Math.floor(random() * (size - 2)),
-    Math.floor(random() * (size - 2)),
-    2,
-    2,
-  );
-};
-
-/** Chequered finish flag marking the exit. */
-const paintChecker: Painter = (context, size) => {
-  const cell = size / 4;
-  for (let y = 0; y < 4; y++) {
-    for (let x = 0; x < 4; x++) {
-      context.fillStyle = (x + y) % 2 === 0 ? '#ffffff' : '#20242e';
-      context.fillRect(x * cell, y * cell, cell, cell);
-    }
+  // A knot, so tiling does not read as a regular weave. Its colour is taken
+  // directly rather than picked: drawing one random for a one-entry palette
+  // would shift every value after it and repaint the whole surface.
+  const specks = surface.specks;
+  if (specks?.length) {
+    context.fillStyle = specks[0];
+    context.fillRect(
+      Math.floor(random() * (size - 2)),
+      Math.floor(random() * (size - 2)),
+      2,
+      2,
+    );
   }
 };
 
 /**
+ * A single scattered thing, drawn as petals around a centre on a transparent
+ * background so the quad reads as an object rather than a square.
+ */
+const paintPetal: Painter = (context, size, random, surface) => {
+  const half = size / 2;
+  const petal = pick(random, surface.base);
+
+  context.clearRect(0, 0, size, size);
+
+  // Plus-shaped arrangement: the most legible flower at 8px.
+  context.fillStyle = petal;
+  context.fillRect(half - 2, half - 1, 4, 2);
+  context.fillRect(half - 1, half - 2, 2, 4);
+
+  context.fillStyle = surface.light;
+  context.fillRect(half - 1, half - 1, 2, 2);
+};
+
+/** A solid face, optionally lit along its top edge. */
+const paintFlat: Painter = (context, size, _random, surface) => {
+  context.fillStyle = surface.base[0];
+  context.fillRect(0, 0, size, size);
+
+  if (surface.edge) {
+    context.fillStyle = surface.edge;
+    context.fillRect(0, 0, size, 1);
+    context.fillRect(0, size - 1, size, 1);
+  }
+};
+
+/** Cell spacing for `grid`, in texture pixels. */
+const GRID_SPACING = 8;
+
+/** A solid field under a lattice, brightened where the lines cross. */
+const paintGrid: Painter = (context, size, _random, surface) => {
+  context.fillStyle = surface.base[0];
+  context.fillRect(0, 0, size, size);
+
+  context.fillStyle = surface.light;
+  for (let i = 0; i < size; i += GRID_SPACING) {
+    context.fillRect(i, 0, 1, size);
+    context.fillRect(0, i, size, 1);
+  }
+
+  // The crossings carry the eye along the lattice; without them a grid at
+  // this resolution reads as two unrelated sets of stripes.
+  context.fillStyle = surface.dark;
+  for (let y = 0; y < size; y += GRID_SPACING) {
+    for (let x = 0; x < size; x += GRID_SPACING) {
+      context.fillRect(x, y, 1, 1);
+    }
+  }
+};
+
+const PAINTERS: Record<SurfaceStyle, Painter> = {
+  speckle: paintSpeckle,
+  tufted: paintTufted,
+  streaked: paintStreaked,
+  grains: paintGrains,
+  clumped: paintClumped,
+  planks: paintPlanks,
+  petal: paintPetal,
+  flat: paintFlat,
+  grid: paintGrid,
+};
+
+/** Paint a surface and wrap it with pixel-art-appropriate filtering. */
+function createTexture(size: number, seed: number, surface: Surface): THREE.Texture {
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('2D canvas context unavailable.');
+
+  PAINTERS[surface.style](context, size, mulberry32(seed), surface);
+
+  const texture = new THREE.CanvasTexture(canvas);
+  // Nearest filtering on both axes is what makes the pixels stay square.
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestMipmapNearestFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+/** Chequered finish flag marking the exit. */
+function createChecker(colours: readonly [string, string]): THREE.Texture {
+  const size = 8;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('2D canvas context unavailable.');
+
+  const cell = size / 4;
+  for (let y = 0; y < 4; y++) {
+    for (let x = 0; x < 4; x++) {
+      context.fillStyle = (x + y) % 2 === 0 ? colours[0] : colours[1];
+      context.fillRect(x * cell, y * cell, cell, cell);
+    }
+  }
+
+  const texture = new THREE.CanvasTexture(canvas);
+  texture.magFilter = THREE.NearestFilter;
+  texture.minFilter = THREE.NearestMipmapNearestFilter;
+  texture.colorSpace = THREE.SRGBColorSpace;
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  return texture;
+}
+
+/**
  * Textures are built on first use and shared for the lifetime of the page:
  * they are immutable, so every mesh can safely reference the same instance.
+ *
+ * A consumer needing its own `repeat` clones the texture rather than mutating
+ * these; three.js reference-counts the underlying image, so the cached
+ * original survives the clone being disposed.
  */
-interface PixelTextures {
+export interface PixelTextures {
   readonly grassTop: THREE.Texture;
   readonly hedgeSide: THREE.Texture;
   readonly path: THREE.Texture;
@@ -213,21 +286,42 @@ interface PixelTextures {
   readonly checker: THREE.Texture;
 }
 
-let cache: PixelTextures | null = null;
+/**
+ * Fixed seeds, so a given theme paints the same textures every time. They are
+ * shared across themes on purpose: the same seed under different palettes puts
+ * the tufts and knots in the same places, which makes two themes comparable
+ * rather than two unrelated piles of noise.
+ */
+const SEEDS = {
+  grassTop: 1337,
+  hedgeSide: 4242,
+  path: 909,
+  bark: 5150,
+  leaves: 7331,
+  wood: 8642,
+  blossom: 2468,
+} as const;
 
-/** Lazily build (and then reuse) the pixel-art texture set. */
-export function getPixelTextures(): PixelTextures {
-  if (cache) return cache;
+const cache = new Map<ThemeId, PixelTextures>();
 
-  cache = {
-    grassTop: createTexture(16, 1337, paintGrassTop),
-    hedgeSide: createTexture(16, 4242, paintHedgeSide),
-    path: createTexture(16, 909, paintPath),
-    bark: createTexture(8, 5150, paintBark),
-    leaves: createTexture(16, 7331, paintLeaves),
-    wood: createTexture(16, 8642, paintWood),
-    blossom: createTexture(8, 2468, paintBlossom),
-    checker: createTexture(8, 1, paintChecker),
+/** Lazily build (and then reuse) one theme's pixel-art texture set. */
+export function getPixelTextures(themeId: ThemeId): PixelTextures {
+  const cached = cache.get(themeId);
+  if (cached) return cached;
+
+  const { surfaces, decor } = THEME[themeId];
+
+  const textures: PixelTextures = {
+    grassTop: createTexture(16, SEEDS.grassTop, surfaces.wallTop),
+    hedgeSide: createTexture(16, SEEDS.hedgeSide, surfaces.wallSide),
+    path: createTexture(16, SEEDS.path, surfaces.floor),
+    bark: createTexture(8, SEEDS.bark, surfaces.trunk),
+    leaves: createTexture(16, SEEDS.leaves, surfaces.crown),
+    wood: createTexture(16, SEEDS.wood, surfaces.border),
+    blossom: createTexture(8, SEEDS.blossom, surfaces.scatter),
+    checker: createChecker(decor.exit.flagColours),
   };
-  return cache;
+
+  cache.set(themeId, textures);
+  return textures;
 }
