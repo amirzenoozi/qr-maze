@@ -207,6 +207,76 @@ const paintGrid: Painter = (context, size, _random, surface) => {
   }
 };
 
+/** Spacing between the horizontal runs a `traces` surface lays down. */
+const TRACE_SPACING = 5;
+
+/**
+ * Copper on solder mask: horizontal runs that turn a corner and end in a pad.
+ *
+ * Real traces are mostly straight with 45-degree turns, but a diagonal at this
+ * resolution is a staircase of single pixels that reads as noise. Right angles
+ * and round pads are what survive being magnified.
+ */
+const paintTraces: Painter = (context, size, random, surface) => {
+  context.fillStyle = surface.base[0];
+  context.fillRect(0, 0, size, size);
+
+  for (let y = 1; y < size; y += TRACE_SPACING) {
+    const start = Math.floor(random() * (size / 2));
+    const end = start + Math.floor(random() * (size - start));
+
+    context.fillStyle = surface.light;
+    context.fillRect(start, y, end - start, 1);
+
+    // A vertical stub turning off the run, so the board is not just stripes.
+    const turn = random();
+    if (turn > 0.45) {
+      const drop = Math.min(TRACE_SPACING - 1, 1 + Math.floor(random() * 3));
+      context.fillRect(end - 1, y, 1, drop);
+    }
+
+    // The pad at the end of a run is the thing that says "circuit".
+    context.fillRect(Math.max(0, end - 2), Math.max(0, y - 1), 2, 2);
+  }
+
+  // Darker relief under a few runs, so the copper sits on the board rather
+  // than floating on it.
+  context.fillStyle = surface.dark;
+  for (let i = 0; i < 4; i++) {
+    context.fillRect(Math.floor(random() * size), Math.floor(random() * size), 1, 1);
+  }
+};
+
+/** Thickness range of one sedimentary band, in texture pixels. */
+const STRATA_MIN = 2;
+const STRATA_MAX = 4;
+
+/** Sedimentary banding: horizontal layers of slightly different tone. */
+const paintStrata: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
+
+  let y = 0;
+  while (y < size) {
+    const depth = STRATA_MIN + Math.floor(random() * (STRATA_MAX - STRATA_MIN + 1));
+    const tone = random();
+
+    // Only about half the bands are tinted. Colouring every one turns rock
+    // into corduroy.
+    if (tone > 0.5) {
+      context.fillStyle = tone > 0.75 ? surface.light : surface.dark;
+      context.fillRect(0, y, size, Math.min(depth, size - y));
+    }
+
+    y += depth;
+  }
+
+  // A wind-scoured highlight along the top, where the block catches the sun.
+  if (surface.edge) {
+    context.fillStyle = surface.edge;
+    context.fillRect(0, 0, size, 1);
+  }
+};
+
 const PAINTERS: Record<SurfaceStyle, Painter> = {
   speckle: paintSpeckle,
   tufted: paintTufted,
@@ -217,6 +287,8 @@ const PAINTERS: Record<SurfaceStyle, Painter> = {
   petal: paintPetal,
   flat: paintFlat,
   grid: paintGrid,
+  traces: paintTraces,
+  strata: paintStrata,
 };
 
 /** Paint a surface and wrap it with pixel-art-appropriate filtering. */
