@@ -115,10 +115,8 @@ entirely determined by where the QR data happened to leave gaps.
 
 ## Playing
 
-Enter a URL and walk. The camera trails you from behind and looks the way you
-are going, so the beacon over the exit is in shot from a long way off; every
-control is read as a direction on the screen rather than a row or a column,
-which is why they still make sense however the view is pointed.
+Enter a URL and walk. Every control is read as a direction on the screen rather
+than a row or a column, so they follow the camera wherever it is pointed.
 
 Walking into a hedge costs nothing. It is not silent, though — the body knocks
 against it and rebounds, so a refused move is never mistaken for a key that
