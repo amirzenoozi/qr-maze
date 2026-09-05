@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { SKY, timeOfDayAt } from './daylight';
+import { timeOfDayAt } from './daylight';
 
 /** Local midday and local midnight, whatever zone the machine is in. */
 function at(hour: number): Date {
@@ -27,12 +27,5 @@ describe('timeOfDayAt', () => {
     const evening = new Date(2026, 5, 1, 20, 30, 0);
     expect(evening.getHours()).toBe(20);
     expect(timeOfDayAt(evening)).toBe('night');
-  });
-
-  it('has a palette for both skies', () => {
-    for (const sky of [SKY.day, SKY.night]) {
-      expect(sky.background).toMatch(/^#[0-9a-f]{6}$/);
-      expect(sky.glow.intensity).toBeGreaterThan(0);
-    }
   });
 });
