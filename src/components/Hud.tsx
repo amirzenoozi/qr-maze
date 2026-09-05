@@ -132,6 +132,9 @@ export function Hud(): React.JSX.Element | null {
           <li className="hud__hint--keys">
             <kbd>B</kbd> — change body
           </li>
+          <li>
+            <kbd>T</kbd> — change world
+          </li>
           <li className="hud__hint--keys">
             <kbd>R</kbd> — restart
           </li>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { DIFFICULTIES, DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { PLAYER_SKINS, SKIN } from '../lib/render/skins';
+import { THEME, THEMES } from '../lib/render/theme';
 import { useGameStore } from '../store/gameStore';
 
 /**
@@ -17,6 +18,8 @@ export function UrlForm(): React.JSX.Element {
   const setDifficulty = useGameStore((state) => state.setDifficulty);
   const skin = useGameStore((state) => state.skin);
   const setSkin = useGameStore((state) => state.setSkin);
+  const theme = useGameStore((state) => state.theme);
+  const setTheme = useGameStore((state) => state.setTheme);
   const buildFromUrl = useGameStore((state) => state.buildFromUrl);
 
   const [draft, setDraft] = useState(url);
@@ -114,6 +117,40 @@ export function UrlForm(): React.JSX.Element {
           })}
         </div>
         <p className="tiers__blurb">{SKIN[skin].blurb}</p>
+      </fieldset>
+
+      {/* Cosmetic in the same way, and changeable mid-run with T. The swatch
+          shows the wall against the floor, which is the pairing that decides
+          whether a world reads at a glance. */}
+      <fieldset className="tiers">
+        <legend className="url-form__label">World</legend>
+        <div className="tiers__row tiers__row--grid">
+          {THEMES.map((id) => {
+            const option = THEME[id];
+            const active = id === theme;
+            return (
+              <button
+                key={id}
+                className={active ? 'tier tier--active' : 'tier'}
+                type="button"
+                aria-pressed={active}
+                title={option.blurb}
+                onClick={() => setTheme(id)}
+              >
+                <span
+                  className="tier__swatch"
+                  style={{
+                    background: option.surfaces.wallTop.base[0],
+                    borderColor: option.surfaces.floor.base[0],
+                  }}
+                  aria-hidden="true"
+                />
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className="tiers__blurb">{THEME[theme].blurb}</p>
       </fieldset>
     </form>
   );

@@ -28,6 +28,7 @@ const RECORD_LIMIT = 200;
 export interface StoredSettings {
   readonly difficulty?: string;
   readonly skin?: string;
+  readonly theme?: string;
   readonly timeOfDay?: string;
 }
 

@@ -42,8 +42,18 @@ afterEach(() => {
 
 describe('settings', () => {
   it('round-trips what the player picked', () => {
-    saveSettings({ difficulty: 'insane', skin: 'mars', timeOfDay: 'night' });
-    expect(loadSettings()).toEqual({ difficulty: 'insane', skin: 'mars', timeOfDay: 'night' });
+    saveSettings({
+      difficulty: 'insane',
+      skin: 'mars',
+      theme: 'neon',
+      timeOfDay: 'night',
+    });
+    expect(loadSettings()).toEqual({
+      difficulty: 'insane',
+      skin: 'mars',
+      theme: 'neon',
+      timeOfDay: 'night',
+    });
   });
 
   it('reads an empty object when nothing has been saved', () => {

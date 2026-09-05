@@ -100,6 +100,12 @@ export function useKeyboardControls(enabled: boolean): void {
         useGameStore.getState().toggleCameraMode();
       }
 
+      if (event.code === 'KeyT') {
+        event.preventDefault();
+        useGameStore.getState().cycleTheme();
+        return;
+      }
+
       if (event.code === 'KeyN') {
         event.preventDefault();
         useGameStore.getState().toggleTimeOfDay();

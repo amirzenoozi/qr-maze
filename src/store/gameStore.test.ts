@@ -4,6 +4,7 @@ import { DIRECTIONS } from '../lib/maze/types';
 import { idx } from '../lib/qr/types';
 import { timeOfDayAt } from '../lib/render/daylight';
 import { PLAYER_SKINS } from '../lib/render/skins';
+import { THEMES } from '../lib/render/theme';
 import { LIVES_PER_URL, useGameStore } from './gameStore';
 
 /**
@@ -245,6 +246,32 @@ describe('time of day', () => {
 
     useGameStore.getState().returnToStart();
     expect(useGameStore.getState().timeOfDay).toBe('night');
+  });
+});
+
+describe('world theme', () => {
+  it('cycles through every world and wraps', () => {
+    expect(useGameStore.getState().theme).toBe(THEMES[0]);
+
+    // Bound to a key, so wrapping is the property that matters.
+    for (const expected of [...THEMES.slice(1), THEMES[0]]) {
+      useGameStore.getState().cycleTheme();
+      expect(useGameStore.getState().theme).toBe(expected);
+    }
+  });
+
+  it('survives everything that resets a board', async () => {
+    await build();
+    useGameStore.getState().setTheme('neon');
+
+    useGameStore.getState().restart();
+    expect(useGameStore.getState().theme).toBe('neon');
+
+    await build('https://example.com');
+    expect(useGameStore.getState().theme).toBe('neon');
+
+    useGameStore.getState().returnToStart();
+    expect(useGameStore.getState().theme).toBe('neon');
   });
 });
 

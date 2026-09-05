@@ -13,6 +13,7 @@ import {
 import { idx } from '../lib/qr/types';
 import { timeOfDayAt, type TimeOfDay } from '../lib/render/daylight';
 import { DEFAULT_SKIN, PLAYER_SKINS, type PlayerSkinId } from '../lib/render/skins';
+import { DEFAULT_THEME, THEMES, type ThemeId } from '../lib/render/theme';
 
 /** Camera presentation modes. */
 export type CameraMode = 'gameplay' | 'scan';
@@ -89,6 +90,12 @@ export interface GameState {
    * is a preference, not part of a run.
    */
   readonly skin: PlayerSkinId;
+
+  /**
+   * Which world the board is dressed as. A viewing preference like the sky,
+   * so it deliberately survives everything that resets a board.
+   */
+  readonly theme: ThemeId;
   /**
    * Fewest moves each board has been solved in, keyed by tier and URL.
    *
@@ -131,6 +138,11 @@ export interface GameState {
   setTimeOfDay: (time: TimeOfDay) => void;
   toggleTimeOfDay: () => void;
   setSkin: (skin: PlayerSkinId) => void;
+
+  setTheme: (theme: ThemeId) => void;
+
+  /** Step to the next world, wrapping. Bound to a key, so it has to wrap. */
+  cycleTheme: () => void;
   /** Step to the next body, wrapping. Bound to a key, so it has to wrap. */
   cycleSkin: () => void;
   openScanCard: () => void;
@@ -190,8 +202,8 @@ const settings = loadSettings();
  * enough to reason about.
  */
 function remember(get: () => GameState): void {
-  const { difficulty, skin, timeOfDay } = get();
-  saveSettings({ difficulty, skin, timeOfDay });
+  const { difficulty, skin, theme, timeOfDay } = get();
+  saveSettings({ difficulty, skin, theme, timeOfDay });
 }
 
 /** Monotonic token so a superseded build can never overwrite a newer one. */
@@ -223,6 +235,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   // than never guessing at all.
   timeOfDay: restored(SKIES, settings.timeOfDay, timeOfDayAt(new Date())),
   skin: restored(PLAYER_SKINS, settings.skin, DEFAULT_SKIN),
+  theme: restored(THEMES, settings.theme, DEFAULT_THEME),
   records: loadRecords(),
   scanCardOpen: false,
 
@@ -423,6 +436,17 @@ export const useGameStore = create<GameState>((set, get) => ({
   cycleSkin: () => {
     const next = (PLAYER_SKINS.indexOf(get().skin) + 1) % PLAYER_SKINS.length;
     set({ skin: PLAYER_SKINS[next] });
+    remember(get);
+  },
+
+  setTheme: (theme) => {
+    set({ theme });
+    remember(get);
+  },
+
+  cycleTheme: () => {
+    const next = (THEMES.indexOf(get().theme) + 1) % THEMES.length;
+    set({ theme: THEMES[next] });
     remember(get);
   },
 
