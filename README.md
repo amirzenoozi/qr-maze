@@ -130,6 +130,7 @@ never arrived.
 | `C` | Toggle the flat top-down view (movement pauses while it is open) |
 | `N` | Switch between day and night |
 | `B` | Change the player's body |
+| `T` | Change the world |
 | `R` | Restart the current maze (spends a retry) |
 
 ### What is remembered
@@ -144,6 +145,34 @@ would never be worth beating.
 Everything lives in `localStorage`, nothing leaves the browser, and there is no
 account to make. Storage that is unavailable — private mode, blocked cookies —
 is treated as "no preference yet" rather than as an error.
+
+### Worlds
+
+`T`, or the picker on the start screen, changes what the board is dressed as.
+
+| World | Looks like |
+|---|---|
+| Park | Hedges and gravel under a spring morning. |
+| Neon | Dark slabs edged in light on a lit grid. |
+
+A world is four things at once: the paint on the blocks and the floor, the
+landmark standing on each of the three finder patterns, the barrier around the
+board, and its own pair of skies. The skies belong to the world rather than
+being shared, because a lit grid under a spring morning reads as a building
+site — the paint and the light have to be chosen together. `N` still switches
+between the two a world ships.
+
+None of it can affect scanning, and that is worth being precise about. The
+top-down view swaps every material for flat black and white and unmounts the
+decoration; the pinned card is a separate 2D raster of the matrix. Neither one
+ever reads a gameplay material, so a world is free to be as dark, as bright or
+as saturated as it likes.
+
+Two things a world may not do. A landmark has to stay inside its 7-module
+finder pattern, or it hangs over a corridor the player walks. And if a world
+flies no flag at the exit, the flag comes back anyway on Insane, which trades
+the beacon away — a themed exit marked by nothing at all is decoration
+outranking wayfinding.
 
 ### Day and night
 
@@ -415,8 +444,12 @@ src/
 │   │   ├── layout.ts       grid ↔ world-space conversion
 │   │   └── maze.test.ts
 │   ├── render/
-│   │   ├── pixelTextures.ts  procedural pixel-art textures (grass, wood, bark…)
-│   │   └── random.ts         seeded PRNG so scenery never reshuffles
+│   │   ├── theme.ts          worlds: palettes, decoration, both skies
+│   │   ├── pixelTextures.ts  painters keyed by surface style, cached per world
+│   │   ├── ballTextures.ts   equirectangular maps for the pictorial bodies
+│   │   ├── skins.ts          player bodies
+│   │   └── daylight.ts       sky shape and the opening clock reading
+│   ├── random.ts           seeded PRNG so scenery never reshuffles
 │   ├── persist.ts          remembered settings and per-board records
 │   └── share.ts            play links, PNG download, system share sheet
 │

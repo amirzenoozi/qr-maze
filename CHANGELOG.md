@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-09-05
+
+### Added
+
+- Worlds. `T`, or a picker on the start screen, dresses the board as a park or
+  as a neon grid. A world carries the paint on the blocks and the floor, the
+  landmark on each finder pattern, the barrier around the board, and its own
+  day and night skies — the sky belongs to the world because a lit grid under a
+  spring morning reads as a building site. The choice is remembered alongside
+  difficulty, body and sky, and survives everything that resets a board.
+
+### Changed
+
+- Textures are painted by a registry keyed on surface style rather than one
+  function per material, so a world is a small record instead of a second copy
+  of the texture file. The park's draw calls were checked against the previous
+  code one by one and are unchanged.
+
 ## [1.12.1] - 2026-09-05
 
 ### Changed
@@ -385,7 +403,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.1...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.13.0...HEAD
+[1.13.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.1...v1.13.0
 [1.12.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.10.0...v1.11.0
