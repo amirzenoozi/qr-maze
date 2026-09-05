@@ -153,10 +153,14 @@ is treated as "no preference yet" rather than as an error.
 | World | Walls | Landmark | Border | Scatter |
 |---|---|---|---|---|
 | Park | Grass-topped hedges | Trees | Picket fence | Wildflowers |
-| Neon | Dark slabs edged in light | Pylons | Light strip | Glowing motes |
 | Snow | Snow-capped stone | Pines | Picket fence | Drifts |
-| Circuit | Component packages | Chips | Copper run | Indicator LEDs |
 | Desert | Banded sandstone | Obelisks | Standing posts | Loose stones |
+
+Two more — Neon and Circuit — are built and tested but withheld from the
+picker. `THEMES` in `theme.ts` is the list on offer and `THEME` is every world
+that exists, so offering one again is a single line. The structural tests run
+over the record rather than the list, which is what stops a withheld world
+rotting while it waits.
 
 A world is four things at once: the paint on the blocks and the floor, the
 landmark standing on each of the three finder patterns, the barrier around the

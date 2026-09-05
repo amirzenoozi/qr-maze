@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-09-05
+
+### Changed
+
+- The picker offers Park, Snow and Desert. Neon and Circuit are kept in full,
+  and still tested, but withheld: the list on offer is now a subset of the
+  worlds that exist rather than all of them. A stored preference for a withheld
+  world no longer validates, so anyone holding one opens on the default.
+- The theme tests run their structural checks over every world in the record
+  instead of over the offered list, so withholding one does not quietly drop it
+  out of coverage.
+
 ## [1.14.0] - 2026-09-05
 
 ### Added
@@ -422,7 +434,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.1...HEAD
+[1.14.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.1...v1.13.0
 [1.12.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.0...v1.12.1
