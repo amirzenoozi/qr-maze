@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-09-05
+
+### Changed
+
+- The gameplay camera is back where it was, in front of the player looking
+  towards the ground already crossed. Turning it around put the exit ahead of
+  you on paper and played worse in practice. The controls followed it back, as
+  they now derive from the same constant. The beacon over the exit is off
+  screen again, so the top-down view remains the way to see it.
+
+
 ## [1.12.0] - 2026-09-05
 
 ### Added
@@ -374,7 +385,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.1...HEAD
+[1.12.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.9.0...v1.10.0
