@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useGameStore } from '../store/gameStore';
 
-/** Narration for the hold, one line per equal slice of the bar. */
-const STAGES = [
-  'Encoding the URL…',
-  'Reserving finder patterns…',
-  'Carving the cheapest corridor…',
-  'Counting the winning routes…',
-  'Planting hedges and blossoms…',
-  'Checking the code still scans…',
-] as const;
+/**
+ * One line, not the six this used to cycle through.
+ *
+ * Six stages needed a five-second hold to be readable. Against a hold that is
+ * now barely longer than a second they would strobe, and a caption nobody can
+ * finish reading is worse than a caption that stays put.
+ */
+const CAPTION = 'Carving a corridor that still scans…';
 
 /** Number of discrete cells in the progress bar. */
 const BAR_CELLS = 24;
@@ -42,7 +41,6 @@ export function LoadingScreen(): React.JSX.Element {
     return () => cancelAnimationFrame(frame);
   }, [startedAt, duration]);
 
-  const stageIndex = Math.min(STAGES.length - 1, Math.floor(progress * STAGES.length));
   const filled = Math.round(progress * BAR_CELLS);
 
   return (
@@ -67,7 +65,7 @@ export function LoadingScreen(): React.JSX.Element {
         </div>
 
         <p className="loading__stage" role="status">
-          {STAGES[stageIndex]}
+          {CAPTION}
         </p>
       </div>
     </div>
