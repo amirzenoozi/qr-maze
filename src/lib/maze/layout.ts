@@ -53,12 +53,16 @@ export function scanExtent(size: number): number {
  * Which side of the player the gameplay camera stands on, as a sign on Z.
  *
  * Rows run along +Z and the exit is the highest row, so `+1` puts the camera
- * between the player and the exit looking back over ground already crossed —
- * which is where it sat until the view was turned around. `-1` puts it behind
- * the player looking towards the exit, so the beacon marking it is finally in
- * shot.
+ * between the player and the exit, and `-1` puts it behind the player looking
+ * towards the exit.
+ *
+ * It has been both. `-1` reads better on paper — the exit is ahead of you and
+ * the beacon standing over it is finally in shot — but it played worse, so the
+ * view sits where it always did. The trade it buys back is worth naming: the
+ * camera shows the ground already crossed and the exit stays off screen, which
+ * is why the beacon is only really seen from the top-down view.
  */
-export const CAMERA_SIDE = -1;
+export const CAMERA_SIDE = 1;
 
 /**
  * Grid step for one move in each on-screen direction.

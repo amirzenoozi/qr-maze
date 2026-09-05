@@ -32,16 +32,16 @@ describe('screen steps', () => {
   });
 
   it('walks up the screen towards whatever the camera is looking at', () => {
-    // Rows run along +Z. A camera on the negative side of the player looks
-    // towards higher rows, so up-screen has to be a higher row too.
-    const towardsTheView = -CAMERA_SIDE;
-    expect(SCREEN_STEPS.up[0]).toBe(towardsTheView);
+    // Rows run along +Z, and the camera looks from its own side back towards
+    // the player, so the direction it faces is away from `CAMERA_SIDE`.
+    // Whichever side that is, up-screen has to follow it.
+    expect(SCREEN_STEPS.up[0]).toBe(-CAMERA_SIDE);
   });
 
-  it('points the camera at the exit rather than the ground already covered', () => {
-    // The exit is the highest row, so a camera on the +Z side of the player
-    // stands between the two and shows the way back.
-    expect(CAMERA_SIDE).toBeLessThan(0);
+  it('stands the camera on one side or the other, never on the player', () => {
+    // Zero would leave the camera directly overhead with no facing at all, and
+    // every screen step would collapse to nothing.
+    expect(Math.abs(CAMERA_SIDE)).toBe(1);
   });
 });
 
