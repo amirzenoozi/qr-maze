@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.14.0] - 2026-09-05
+
+### Added
+
+- Three more worlds. Snow is snow-capped stone and pines under a winter light
+  bright enough to show that snow throws back most of what lands on it.
+  Circuit is component packages on solder mask, with copper runs across the
+  floor and indicator LEDs on the blocks. Desert is banded sandstone and
+  obelisks, its border reduced to standing posts with nothing between them.
+- Two painters: sedimentary banding, which is what makes a sandstone block
+  read as cut rock rather than a beige box, and copper traces ending in pads.
+
+### Changed
+
+- A world scattering nothing now stops before placing anything, rather than
+  relying on a random draw never coming back exactly zero.
+- The theme tests paint every world instead of checking style names against a
+  hand-written list, so a broken painter fails rather than a stale list.
+
 ## [1.13.0] - 2026-09-05
 
 ### Added
@@ -403,7 +422,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.13.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.0...HEAD
+[1.14.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.1...v1.13.0
 [1.12.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.0...v1.12.1
 [1.12.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.11.0...v1.12.0

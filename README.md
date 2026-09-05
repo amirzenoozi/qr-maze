@@ -150,14 +150,19 @@ is treated as "no preference yet" rather than as an error.
 
 `T`, or the picker on the start screen, changes what the board is dressed as.
 
-| World | Looks like |
-|---|---|
-| Park | Hedges and gravel under a spring morning. |
-| Neon | Dark slabs edged in light on a lit grid. |
+| World | Walls | Landmark | Border | Scatter |
+|---|---|---|---|---|
+| Park | Grass-topped hedges | Trees | Picket fence | Wildflowers |
+| Neon | Dark slabs edged in light | Pylons | Light strip | Glowing motes |
+| Snow | Snow-capped stone | Pines | Picket fence | Drifts |
+| Circuit | Component packages | Chips | Copper run | Indicator LEDs |
+| Desert | Banded sandstone | Obelisks | Standing posts | Loose stones |
 
 A world is four things at once: the paint on the blocks and the floor, the
 landmark standing on each of the three finder patterns, the barrier around the
-board, and its own pair of skies. The skies belong to the world rather than
+board, and its own pair of skies. Each surface names a painter — banding for
+sandstone, copper runs for solder mask, a lattice for the grid — so a world is
+a small record rather than another copy of the texture code. The skies belong to the world rather than
 being shared, because a lit grid under a spring morning reads as a building
 site — the paint and the light have to be chosen together. `N` still switches
 between the two a world ships.
