@@ -1,7 +1,15 @@
 import { create } from 'zustand';
 import { buildMaze, type MazeBuildAttempt } from '../lib/maze/build';
-import { DEFAULT_DIFFICULTY, type Difficulty } from '../lib/maze/difficulty';
+import { DEFAULT_DIFFICULTY, DIFFICULTIES, type Difficulty } from '../lib/maze/difficulty';
 import type { Maze, Point } from '../lib/maze/types';
+import {
+  loadRecords,
+  loadSettings,
+  recordKey,
+  recordSolve,
+  saveSettings,
+  type Records,
+} from '../lib/persist';
 import { idx } from '../lib/qr/types';
 import { timeOfDayAt, type TimeOfDay } from '../lib/render/daylight';
 import { DEFAULT_SKIN, PLAYER_SKINS, type PlayerSkinId } from '../lib/render/skins';
@@ -33,6 +41,16 @@ export interface GameState {
 
   readonly player: Point;
   readonly moves: number;
+  /**
+   * The last move the board refused, and a counter of how many it has refused.
+   *
+   * Kept in the store rather than raised as an event because the body that
+   * reacts to it lives inside the render loop, and the loop only ever reads
+   * state. The nonce never resets: a value that went back to zero on restart
+   * could collide with one a component had already seen and fire a phantom
+   * knock.
+   */
+  readonly bump: { readonly deltaRow: number; readonly deltaCol: number; readonly nonce: number };
   readonly won: boolean;
   /** Set when the move budget runs out before the exit is reached. */
   readonly lost: boolean;
@@ -71,6 +89,21 @@ export interface GameState {
    * is a preference, not part of a run.
    */
   readonly skin: PlayerSkinId;
+  /**
+   * Fewest moves each board has been solved in, keyed by tier and URL.
+   *
+   * Held in the store as well as in storage so a win can re-render the HUD
+   * without anyone reaching into `localStorage` mid-render.
+   */
+  readonly records: Records;
+  /**
+   * Whether the run just finished beat the board's previous best.
+   *
+   * Kept separately because the record table has already absorbed this run
+   * by the time anything renders, so the new best and the old one are no
+   * longer distinguishable from it. Equalling a best is not beating it.
+   */
+  readonly improved: boolean;
 
   /**
    * Whether the corner badge is enlarged to its centred, easily scannable
@@ -118,21 +151,55 @@ const ORIGIN: Point = { row: 0, col: 0 };
 export const LIVES_PER_URL = 3;
 
 /**
- * The loading screen is deliberately held open for 5-7 seconds.
+ * Shortest time the loading screen stays up.
  *
- * Carving is near-instant, so this delay is pure staging: it gives the
- * "generating your maze" beat somewhere to happen instead of flashing past.
- * Build *failures* skip the wait entirely — there is nothing to savour there.
+ * Carving takes well under a fifth of a second, so this is a floor rather than
+ * a wait: without one the screen would appear and vanish inside a couple of
+ * frames, which reads as a glitch. It used to be five to seven seconds of
+ * theatre, which cost every single play — and every retry — more time than the
+ * maze took to solve.
+ *
+ * It is only a floor. A slow device that genuinely needs longer simply takes
+ * longer, because the build has to finish before this is even measured. Build
+ * *failures* skip it entirely; there is nothing to stage there.
  */
-const BUILD_HOLD_MIN_MS = 5000;
-const BUILD_HOLD_JITTER_MS = 2000;
+const BUILD_HOLD_MS = 1100;
+
+/** The two skies, as a list, so a stored value can be checked against them. */
+const SKIES: readonly TimeOfDay[] = ['day', 'night'];
+
+/**
+ * Take a stored preference only if it is still one of the options.
+ *
+ * Storage outlives the build that wrote it. A body that has since been renamed
+ * or a tier that no longer exists would otherwise be handed straight to a
+ * lookup table and come back undefined, half a frame before something tries to
+ * read a colour off it.
+ */
+function restored<T extends string>(options: readonly T[], stored: string | undefined, fallback: T): T {
+  return options.includes(stored as T) ? (stored as T) : fallback;
+}
+
+const settings = loadSettings();
+
+/**
+ * Write the three preferences back out.
+ *
+ * Called after the fact rather than inside `set` so there is exactly one
+ * description of what counts as a preference, and so the reducers stay pure
+ * enough to reason about.
+ */
+function remember(get: () => GameState): void {
+  const { difficulty, skin, timeOfDay } = get();
+  saveSettings({ difficulty, skin, timeOfDay });
+}
 
 /** Monotonic token so a superseded build can never overwrite a newer one. */
 let buildSequence = 0;
 
 export const useGameStore = create<GameState>((set, get) => ({
   url: 'https://www.linkedin.com/in/amirhosein-duzandeh-zenoozi/',
-  difficulty: DEFAULT_DIFFICULTY,
+  difficulty: restored(DIFFICULTIES, settings.difficulty, DEFAULT_DIFFICULTY),
   status: 'idle',
   error: null,
   maze: null,
@@ -143,17 +210,26 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   player: ORIGIN,
   moves: 0,
+  bump: { deltaRow: 0, deltaCol: 0, nonce: 0 },
   won: false,
   lost: false,
+  improved: false,
   lives: LIVES_PER_URL,
   variant: Date.now(),
   cameraMode: 'gameplay',
   // Opens on whichever sky matches the visitor's own clock, then stays put.
-  timeOfDay: timeOfDayAt(new Date()),
-  skin: DEFAULT_SKIN,
+  // The clock only decides the sky for a visitor who has never said
+  // otherwise. Overruling a stated preference every evening would be worse
+  // than never guessing at all.
+  timeOfDay: restored(SKIES, settings.timeOfDay, timeOfDayAt(new Date())),
+  skin: restored(PLAYER_SKINS, settings.skin, DEFAULT_SKIN),
+  records: loadRecords(),
   scanCardOpen: false,
 
-  setDifficulty: (difficulty) => set({ difficulty }),
+  setDifficulty: (difficulty) => {
+    set({ difficulty });
+    remember(get);
+  },
 
   buildFromUrl: (url) => {
     const trimmed = url.trim();
@@ -163,7 +239,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     const token = ++buildSequence;
-    const duration = BUILD_HOLD_MIN_MS + Math.random() * BUILD_HOLD_JITTER_MS;
+    const duration = BUILD_HOLD_MS;
     const startedAt = Date.now();
 
     // Re-roll the route only for a board the player has run out of hearts on.
@@ -221,6 +297,7 @@ export const useGameStore = create<GameState>((set, get) => ({
           moves: 0,
           won: false,
           lost: false,
+          improved: false,
           lives: LIVES_PER_URL,
           cameraMode: 'gameplay',
           scanCardOpen: false,
@@ -241,15 +318,25 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const row = player.row + deltaRow;
     const col = player.col + deltaCol;
-    if (row < 0 || col < 0 || row >= maze.size || col >= maze.size) return;
+    const outside = row < 0 || col < 0 || row >= maze.size || col >= maze.size;
 
     // Walkability is decided purely by the module colour: light modules are
     // corridors, dark modules are walls. A move into a wall is refused rather
     // than charged, so bumping around to feel out the maze is free.
-    if (maze.modules[idx(maze.size, row, col)] === 1) return;
+    //
+    // Free, but not silent. A refused move used to be indistinguishable from
+    // a dropped keypress, which on a phone reads as the game ignoring you.
+    // The nonce is what the body watches: a fresh one is a fresh knock, even
+    // against the same hedge twice running.
+    if (outside || maze.modules[idx(maze.size, row, col)] === 1) {
+      set({ bump: { deltaRow, deltaCol, nonce: get().bump.nonce + 1 } });
+      return;
+    }
 
     const moves = get().moves + 1;
     const reachedExit = row === maze.end.row && col === maze.end.col;
+    const key = recordKey(maze.url, maze.difficulty);
+    const previousBest = get().records[key]?.best;
 
     // The win is settled before the budget is. Spending the final move to
     // land on the exit is a win, not a loss on a technicality.
@@ -261,6 +348,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       moves,
       won: reachedExit,
       lost: !reachedExit && moves >= maze.moveBudget,
+      // Folded in on the winning step rather than read back later, so the win
+      // panel and the HUD are looking at the same table the moment they render.
+      records: reachedExit ? recordSolve(get().records, key, moves) : get().records,
+      improved: reachedExit && (previousBest === undefined || moves < previousBest),
     });
   },
 
@@ -281,6 +372,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       moves: 0,
       won: false,
       lost: false,
+      improved: false,
       lives: free ? lives : lives - 1,
       cameraMode: 'gameplay',
       scanCardOpen: false,
@@ -299,6 +391,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       moves: 0,
       won: false,
       lost: false,
+      improved: false,
       // Hearts belong to a board, and this clears the board. Refilling here
       // would erase the one signal that says the last maze was used up, so
       // rebuilding the same link would hand back the board that just ended.
@@ -312,15 +405,25 @@ export const useGameStore = create<GameState>((set, get) => ({
   toggleCameraMode: () =>
     set({ cameraMode: get().cameraMode === 'gameplay' ? 'scan' : 'gameplay' }),
 
-  setTimeOfDay: (time) => set({ timeOfDay: time }),
+  setTimeOfDay: (time) => {
+    set({ timeOfDay: time });
+    remember(get);
+  },
 
-  toggleTimeOfDay: () => set({ timeOfDay: get().timeOfDay === 'day' ? 'night' : 'day' }),
+  toggleTimeOfDay: () => {
+    set({ timeOfDay: get().timeOfDay === 'day' ? 'night' : 'day' });
+    remember(get);
+  },
 
-  setSkin: (skin) => set({ skin }),
+  setSkin: (skin) => {
+    set({ skin });
+    remember(get);
+  },
 
   cycleSkin: () => {
     const next = (PLAYER_SKINS.indexOf(get().skin) + 1) % PLAYER_SKINS.length;
     set({ skin: PLAYER_SKINS[next] });
+    remember(get);
   },
 
   openScanCard: () => set({ scanCardOpen: true }),

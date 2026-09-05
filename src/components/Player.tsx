@@ -6,7 +6,7 @@ import type { Maze, Point } from '../lib/maze/types';
 import { getBallTexture } from '../lib/render/ballTextures';
 import { SKY, type TimeOfDay } from '../lib/render/daylight';
 import { SKIN, type PlayerSkinId, type SkinShape } from '../lib/render/skins';
-import type { CameraMode } from '../store/gameStore';
+import type { CameraMode, GameState } from '../store/gameStore';
 
 const RADIUS = CELL_SIZE * 0.3;
 /**
@@ -32,6 +32,17 @@ const RESTING_Y = RADIUS * 1.4;
 
 /** How quickly the body converges on its target cell (per second). */
 const FOLLOW_RATE = 12;
+
+/**
+ * How long the knock against a hedge lasts, in seconds, and how far it
+ * carries.
+ *
+ * Short and small on purpose. The point is to distinguish "the board said no"
+ * from "the key never arrived", which needs to be legible without reading as
+ * a move. A little overlap into the hedge at the peak is what sells contact.
+ */
+const KNOCK_SECONDS = 0.22;
+const KNOCK_DISTANCE = CELL_SIZE * 0.12;
 const BOB_RATE = 2.4;
 const BOB_HEIGHT = CELL_SIZE * 0.05;
 const SPIN_RATE = 1.1;
@@ -43,6 +54,7 @@ interface PlayerProps {
   readonly cameraMode: CameraMode;
   readonly timeOfDay: TimeOfDay;
   readonly skin: PlayerSkinId;
+  readonly bump: GameState['bump'];
 }
 
 /**
@@ -111,10 +123,17 @@ export function Player({
   cameraMode,
   timeOfDay,
   skin: skinId,
+  bump,
 }: PlayerProps): React.JSX.Element {
   const groupRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Mesh>(null);
   const target = useRef(new THREE.Vector3());
+
+  // Knock state. Negative infinity so a body that has never been refused is
+  // already past the end of its knock on the very first frame.
+  const seenBump = useRef(bump.nonce);
+  const knockAt = useRef(Number.NEGATIVE_INFINITY);
+  const knockDirection = useRef(new THREE.Vector3());
 
   // Rolling state. The cube accumulates a quarter turn per committed move, so
   // the face that was on top ends up where it travelled.
@@ -157,6 +176,27 @@ export function Player({
         quarter.current.setFromAxisAngle(axis.current, turn);
         roll.current.premultiply(quarter.current);
       }
+    }
+
+    if (bump.nonce !== seenBump.current) {
+      seenBump.current = bump.nonce;
+      knockAt.current = state.clock.elapsedTime;
+      knockDirection.current.set(bump.deltaCol, 0, bump.deltaRow);
+    }
+
+    // The knock rides on the body's local offset rather than the group's
+    // position, so it never fights the smoothing that carries the group from
+    // cell to cell. A full sine period lunges into the hedge, rebounds past
+    // the resting point and settles.
+    const knockAge = state.clock.elapsedTime - knockAt.current;
+    if (knockAge < KNOCK_SECONDS) {
+      const progress = knockAge / KNOCK_SECONDS;
+      const swing = Math.sin(progress * Math.PI * 2) * KNOCK_DISTANCE * (1 - progress);
+      body.position.x = knockDirection.current.x * swing;
+      body.position.z = knockDirection.current.z * swing;
+    } else {
+      body.position.x = 0;
+      body.position.z = 0;
     }
 
     switch (skin.motion) {
