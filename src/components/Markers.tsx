@@ -8,6 +8,7 @@ import { DIFFICULTY_CONFIG } from '../lib/maze/difficulty';
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
+import { THEME, type ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 const PAD_SIZE = CELL_SIZE * 0.86;
@@ -26,22 +27,32 @@ const PULSE_SPEED = 2.2;
 interface MarkersProps {
   readonly maze: Maze;
   readonly cameraMode: CameraMode;
+  readonly theme: ThemeId;
 }
 
 /**
  * Start and exit markers.
  *
  * Without these the maze gives the player no goal: the exit is a corner cell
- * that looks exactly like every other gravel square. The exit therefore gets a
- * light beam tall enough to be seen over the hedges from anywhere on the
+ * that looks exactly like every other floor square. The exit therefore gets a
+ * light beam tall enough to be seen over the walls from anywhere on the
  * board, which is what makes the objective legible at a glance.
+ *
+ * Colours and the flag come from the theme. The geometry does not: the pad
+ * size, pole and beam height are what make the exit readable at this scale,
+ * and a theme that shrank them would be trading legibility for decoration.
  *
  * Both markers are hidden in scan mode, where they would sit on light modules
  * and darken them.
  */
-export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element | null {
+export function Markers({
+  maze,
+  cameraMode,
+  theme,
+}: MarkersProps): React.JSX.Element | null {
   const beamRef = useRef<THREE.Mesh>(null);
-  const { checker } = getPixelTextures();
+  const { checker } = getPixelTextures(theme);
+  const { exit, start } = THEME[theme].decor;
 
   useFrame(({ clock }) => {
     const beam = beamRef.current;
@@ -66,8 +77,8 @@ export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element |
       <mesh position={[startX, PAD_HEIGHT / 2, startZ]} receiveShadow>
         <boxGeometry args={[PAD_SIZE, PAD_HEIGHT, PAD_SIZE]} />
         <meshStandardMaterial
-          color="#3fb6e8"
-          emissive="#2aa0d8"
+          color={start.padColour}
+          emissive={start.padEmissive}
           emissiveIntensity={0.6}
           roughness={0.6}
         />
@@ -77,8 +88,8 @@ export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element |
         <mesh position={[0, PAD_HEIGHT / 2, 0]} receiveShadow>
           <boxGeometry args={[PAD_SIZE, PAD_HEIGHT, PAD_SIZE]} />
           <meshStandardMaterial
-            color="#ffc63f"
-            emissive="#ffab1f"
+            color={exit.padColour}
+            emissive={exit.padEmissive}
             emissiveIntensity={0.8}
             roughness={0.55}
           />
@@ -86,18 +97,27 @@ export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element |
 
         <mesh position={[0, WALL_HEIGHT + POLE_HEIGHT / 2, 0]} castShadow>
           <boxGeometry args={[0.12, POLE_HEIGHT, 0.12]} />
-          <meshStandardMaterial color="#8a6136" roughness={1} />
+          <meshStandardMaterial color={exit.poleColour} roughness={1} />
         </mesh>
 
-        <mesh
-          position={[FLAG_WIDTH / 2, WALL_HEIGHT + POLE_HEIGHT - FLAG_HEIGHT * 0.7, 0]}
-          castShadow
-        >
-          <boxGeometry args={[FLAG_WIDTH, FLAG_HEIGHT, 0.06]} />
-          <meshStandardMaterial map={checker} roughness={0.9} />
-        </mesh>
+        {/* A chequered pennant is a race-day object, so a theme that is not
+            holding a race flies nothing and keeps the bare pole.
 
-        {/* The beam is the only part of the exit visible over a hedge, so
+            Except when the beacon is off. Insane trades the beam for the flag,
+            so a theme dropping the flag as well would leave the exit marked by
+            nothing but a pad you cannot see over a wall. Wayfinding outranks
+            decoration: the flag comes back. */}
+        {(exit.flag || !beacon) && (
+          <mesh
+            position={[FLAG_WIDTH / 2, WALL_HEIGHT + POLE_HEIGHT - FLAG_HEIGHT * 0.7, 0]}
+            castShadow
+          >
+            <boxGeometry args={[FLAG_WIDTH, FLAG_HEIGHT, 0.06]} />
+            <meshStandardMaterial map={checker} roughness={0.9} />
+          </mesh>
+        )}
+
+        {/* The beam is the only part of the exit visible over a wall, so
             withholding it is the single biggest change to how lost the player
             feels. Insane trades it for the flag alone, which you have to be
             almost on top of to see. */}
@@ -105,7 +125,7 @@ export function Markers({ maze, cameraMode }: MarkersProps): React.JSX.Element |
           <mesh ref={beamRef} position={[0, BEAM_HEIGHT / 2, 0]}>
             <boxGeometry args={[BEAM_WIDTH, BEAM_HEIGHT, BEAM_WIDTH]} />
             <meshBasicMaterial
-              color="#ffd76a"
+              color={exit.beamColour}
               transparent
               opacity={0.25}
               // Additive and depth-write-free so the beam glows over the scene

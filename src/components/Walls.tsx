@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
+import type { ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 /**
@@ -15,6 +16,7 @@ const SHADOW_BUDGET = 2500;
 interface WallsProps {
   readonly maze: Maze;
   readonly cameraMode: CameraMode;
+  readonly theme: ThemeId;
 }
 
 /**
@@ -27,7 +29,7 @@ interface WallsProps {
  * six-entry material array gives the blocks grass on top and hedge on the sides
  * while still instancing.
  */
-export function Walls({ maze, cameraMode }: WallsProps): React.JSX.Element {
+export function Walls({ maze, cameraMode, theme }: WallsProps): React.JSX.Element {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const scan = cameraMode === 'scan';
 
@@ -54,12 +56,14 @@ export function Walls({ maze, cameraMode }: WallsProps): React.JSX.Element {
       return new THREE.MeshBasicMaterial({ color: '#000000' });
     }
 
-    const { grassTop, hedgeSide } = getPixelTextures();
+    const { grassTop, hedgeSide } = getPixelTextures(theme);
     const side = new THREE.MeshStandardMaterial({ map: hedgeSide, roughness: 0.95 });
     const top = new THREE.MeshStandardMaterial({ map: grassTop, roughness: 0.9 });
     // The underside is never visible; reusing `side` avoids a seventh program.
     return [side, side, top, side, side, side];
-  }, [scan]);
+    // The theme repaints the blocks, so it must invalidate these materials
+    // exactly as `scan` does. Without it, switching theme keeps the old paint.
+  }, [scan, theme]);
 
   // Procedurally created materials are owned by this component, so they must
   // be released when the mode changes or the component unmounts.

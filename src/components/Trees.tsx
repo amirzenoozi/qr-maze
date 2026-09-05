@@ -2,43 +2,41 @@ import { useMemo } from 'react';
 import { WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
+import { THEME, type ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 /** Finder patterns are 7x7 modules, so their centre sits 3 cells in. */
 const FINDER_SIZE = 7;
 const FINDER_CENTRE_OFFSET = 3;
 
-/**
- * Stacked canopy tiers, widest at the bottom. Widths stay under the 7-module
- * finder so a tree never overhangs a playable corridor.
- */
-const CANOPY_TIERS: ReadonlyArray<{ width: number; height: number; y: number }> = [
-  { width: 4.4, height: 1.1, y: 3.1 },
-  { width: 3.2, height: 1.0, y: 4.0 },
-  { width: 1.8, height: 0.9, y: 4.8 },
-];
-
-const TRUNK_WIDTH = 0.9;
-const TRUNK_HEIGHT = 2.6;
+/** How much a tapered tier narrows towards its top, as a fraction of width. */
+const TAPER = 0.45;
 
 interface TreesProps {
   readonly maze: Maze;
   readonly cameraMode: CameraMode;
+  readonly theme: ThemeId;
 }
 
 /**
- * Decorative pixel-art trees planted on the three finder patterns.
+ * The landmark standing on each of the three finder patterns.
  *
- * They are cosmetic only: the finder corners are reserved function patterns
+ * A park plants trees here; other themes stand pylons or obelisks. The form is
+ * whatever the theme's `decor.landmark` describes, because the useful thing is
+ * the position, not the shape: the finders are the only three places on the
+ * board guaranteed to be solid, identical and out of play.
+ *
+ * They are cosmetic only. The finder corners are reserved function patterns
  * that the timing lines cut off from the playable region, so nothing here can
  * affect movement.
  *
- * Trees are hidden in scan mode. Seen from above, a canopy would cover the
+ * Landmarks are hidden in scan mode. Seen from above, a crown would cover the
  * finder's dark-light-dark rings, which is precisely the feature a scanner
  * uses to locate and orient the symbol.
  */
-export function Trees({ maze, cameraMode }: TreesProps): React.JSX.Element | null {
-  const { bark, leaves } = getPixelTextures();
+export function Trees({ maze, cameraMode, theme }: TreesProps): React.JSX.Element | null {
+  const { bark, leaves } = getPixelTextures(theme);
+  const landmark = THEME[theme].decor.landmark;
 
   // Top-left, top-right and bottom-left; a QR symbol has no fourth finder.
   const centres = useMemo(() => {
@@ -57,15 +55,35 @@ export function Trees({ maze, cameraMode }: TreesProps): React.JSX.Element | nul
     <group>
       {centres.map(([x, z], index) => (
         <group key={index} position={[x, 0, z]}>
-          <mesh position={[0, WALL_HEIGHT + TRUNK_HEIGHT / 2, 0]} castShadow receiveShadow>
-            <boxGeometry args={[TRUNK_WIDTH, TRUNK_HEIGHT, TRUNK_WIDTH]} />
+          <mesh
+            position={[0, WALL_HEIGHT + landmark.trunkHeight / 2, 0]}
+            castShadow
+            receiveShadow
+          >
+            <boxGeometry
+              args={[landmark.trunkWidth, landmark.trunkHeight, landmark.trunkWidth]}
+            />
             <meshStandardMaterial map={bark} roughness={1} />
           </mesh>
 
-          {CANOPY_TIERS.map((tier) => (
+          {landmark.tiers.map((tier) => (
             <mesh key={tier.y} position={[0, tier.y, 0]} castShadow receiveShadow>
-              <boxGeometry args={[tier.width, tier.height, tier.width]} />
-              <meshStandardMaterial map={leaves} roughness={0.95} />
+              {/* A tapered tier is the same box with its top face pulled in,
+                  which `BoxGeometry` cannot do; a four-sided cylinder can, and
+                  keeps the flat-faceted silhouette the rest of the world has. */}
+              {landmark.shape === 'tapered' ? (
+                <cylinderGeometry
+                  args={[tier.width * TAPER, tier.width, tier.height, 4]}
+                />
+              ) : (
+                <boxGeometry args={[tier.width, tier.height, tier.width]} />
+              )}
+              <meshStandardMaterial
+                map={leaves}
+                roughness={0.95}
+                emissive={landmark.emissive ?? '#000000'}
+                emissiveIntensity={landmark.emissive ? 1.4 : 0}
+              />
             </mesh>
           ))}
         </group>

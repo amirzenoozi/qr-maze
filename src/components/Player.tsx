@@ -4,7 +4,8 @@ import * as THREE from 'three';
 import { CELL_SIZE, cellToWorld } from '../lib/maze/layout';
 import type { Maze, Point } from '../lib/maze/types';
 import { getBallTexture } from '../lib/render/ballTextures';
-import { SKY, type TimeOfDay } from '../lib/render/daylight';
+import type { TimeOfDay } from '../lib/render/daylight';
+import { THEME, type ThemeId } from '../lib/render/theme';
 import { SKIN, type PlayerSkinId, type SkinShape } from '../lib/render/skins';
 import type { CameraMode, GameState } from '../store/gameStore';
 
@@ -53,6 +54,7 @@ interface PlayerProps {
   readonly player: Point;
   readonly cameraMode: CameraMode;
   readonly timeOfDay: TimeOfDay;
+  readonly theme: ThemeId;
   readonly skin: PlayerSkinId;
   readonly bump: GameState['bump'];
 }
@@ -122,6 +124,7 @@ export function Player({
   player,
   cameraMode,
   timeOfDay,
+  theme,
   skin: skinId,
   bump,
 }: PlayerProps): React.JSX.Element {
@@ -144,7 +147,7 @@ export function Player({
   const quarter = useRef(new THREE.Quaternion());
   const tumbleAxis = useRef(new THREE.Vector3(0.4, 1, 0.28).normalize());
 
-  const glow = SKY[timeOfDay].glow;
+  const glow = THEME[theme].sky[timeOfDay].glow;
   const skin = SKIN[skinId];
   const map = skin.texture ? getBallTexture(skin.texture) : null;
   const turn = rollAngle(skin.shape);

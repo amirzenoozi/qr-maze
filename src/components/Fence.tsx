@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import { CELL_SIZE, boardExtent } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
+import { THEME, type ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 /**
@@ -17,14 +18,12 @@ const MARGIN = CELL_SIZE * 1.5;
 const POST_SPACING = CELL_SIZE * 2.5;
 
 const POST_WIDTH = CELL_SIZE * 0.26;
-const POST_HEIGHT = CELL_SIZE * 1.5;
+
 const CAP_WIDTH = CELL_SIZE * 0.38;
 const CAP_HEIGHT = CELL_SIZE * 0.16;
 
 const RAIL_HEIGHT = CELL_SIZE * 0.2;
 const RAIL_DEPTH = CELL_SIZE * 0.12;
-/** Heights of the two horizontal rails. */
-const RAIL_LEVELS = [CELL_SIZE * 0.52, CELL_SIZE * 1.08];
 
 /** World units of rail covered by one repeat of the wood texture. */
 const WOOD_TILE = CELL_SIZE * 1.5;
@@ -32,6 +31,7 @@ const WOOD_TILE = CELL_SIZE * 1.5;
 interface FenceProps {
   readonly maze: Maze;
   readonly cameraMode: CameraMode;
+  readonly theme: ThemeId;
 }
 
 /**
@@ -44,7 +44,14 @@ interface FenceProps {
  * Posts and caps are instanced; the eight rails are plain meshes, because each
  * needs its own texture stretch and there are only eight of them.
  */
-export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | null {
+export function Fence({
+  maze,
+  cameraMode,
+  theme,
+}: FenceProps): React.JSX.Element | null {
+  const border = THEME[theme].decor.border;
+  const postHeight = CELL_SIZE * border.postHeight;
+  const railLevels = border.railLevels;
   const postsRef = useRef<THREE.InstancedMesh>(null);
   const capsRef = useRef<THREE.InstancedMesh>(null);
 
@@ -79,14 +86,14 @@ export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | nul
   }, [half]);
 
   const materials = useMemo(() => {
-    const { wood } = getPixelTextures();
+    const { wood } = getPixelTextures(theme);
 
     // Each part needs its own texture stretch, so each gets its own clone.
     // Cloning shares the underlying image; three ref-counts it, so the cached
     // original survives disposal here.
     const postMap = wood.clone();
     postMap.needsUpdate = true;
-    postMap.repeat.set(1, POST_HEIGHT / WOOD_TILE);
+    postMap.repeat.set(1, postHeight / WOOD_TILE);
 
     const capMap = wood.clone();
     capMap.needsUpdate = true;
@@ -100,7 +107,9 @@ export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | nul
       cap: new THREE.MeshStandardMaterial({ map: capMap, roughness: 0.85 }),
       rail: new THREE.MeshStandardMaterial({ map: railMap, roughness: 0.85 }),
     };
-  }, [railLength]);
+    // The theme repaints the timber, so it invalidates these the same way a
+    // change of rail length does.
+  }, [railLength, postHeight, theme]);
 
   // Clones and materials are owned here, so they are released on change.
   useLayoutEffect(() => {
@@ -116,10 +125,10 @@ export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | nul
     const matrix = new THREE.Matrix4();
 
     posts.forEach(([x, z], i) => {
-      matrix.setPosition(x, POST_HEIGHT / 2, z);
+      matrix.setPosition(x, postHeight / 2, z);
       postsRef.current?.setMatrixAt(i, matrix);
 
-      matrix.setPosition(x, POST_HEIGHT + CAP_HEIGHT / 2, z);
+      matrix.setPosition(x, postHeight + CAP_HEIGHT / 2, z);
       capsRef.current?.setMatrixAt(i, matrix);
     });
 
@@ -128,7 +137,7 @@ export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | nul
       mesh.instanceMatrix.needsUpdate = true;
       mesh.computeBoundingSphere();
     }
-  }, [posts, materials]);
+  }, [posts, materials, postHeight]);
 
   if (cameraMode === 'scan') return null;
 
@@ -143,9 +152,10 @@ export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | nul
         castShadow
         receiveShadow
       >
-        <boxGeometry args={[POST_WIDTH, POST_HEIGHT, POST_WIDTH]} />
+        <boxGeometry args={[POST_WIDTH, postHeight, POST_WIDTH]} />
       </instancedMesh>
 
+      {border.capped && (
       <instancedMesh
         key={`caps-${posts.length}`}
         ref={capsRef}
@@ -155,8 +165,9 @@ export function Fence({ maze, cameraMode }: FenceProps): React.JSX.Element | nul
       >
         <boxGeometry args={[CAP_WIDTH, CAP_HEIGHT, CAP_WIDTH]} />
       </instancedMesh>
+      )}
 
-      {RAIL_LEVELS.map((y) => (
+      {railLevels.map((level) => CELL_SIZE * level).map((y) => (
         <group key={y}>
           {/* North and south rails run along X. */}
           <mesh position={[0, y, -half]} material={materials.rail} castShadow receiveShadow>

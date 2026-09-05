@@ -2,24 +2,27 @@ import { useLayoutEffect, useMemo } from 'react';
 import { floorExtent, scanExtent } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
+import type { ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 interface FloorProps {
   readonly maze: Maze;
   readonly cameraMode: CameraMode;
+  readonly theme: ThemeId;
 }
 
 /**
  * The light-module plane the player walks on: a gravel park path.
  *
- * The gravel palette is deliberately near-white. Light modules are what a
- * scanner reads as "white", so anything darker here would eat into the
- * contrast the symbol depends on.
+ * The floor is painted by the theme and is free to be any colour at all.
+ * Gameplay is never decoded: the top-down view below swaps to flat white
+ * and the pinned card is a separate 2D raster of the matrix, so nothing
+ * painted here can eat into the contrast the symbol depends on.
  *
  * In scan mode the plane becomes unlit pure white so that, together with the
  * black wall tops, the top-down view is a genuine high-contrast QR code.
  */
-export function Floor({ maze, cameraMode }: FloorProps): React.JSX.Element {
+export function Floor({ maze, cameraMode, theme }: FloorProps): React.JSX.Element {
   // Includes the quiet zone, without which a scanner cannot lock on.
   // The top-down view widens the white field by one more ring, so the
   // position markers have somewhere to sit that is not the quiet zone.
@@ -30,11 +33,11 @@ export function Floor({ maze, cameraMode }: FloorProps): React.JSX.Element {
   // grid instead of drifting across it. `repeat` is per-texture but the pixel
   // data is shared, so this clones the cached texture rather than mutating it.
   const path = useMemo(() => {
-    const texture = getPixelTextures().path.clone();
+    const texture = getPixelTextures(theme).path.clone();
     texture.repeat.set(extent, extent);
     texture.needsUpdate = true;
     return texture;
-  }, [extent]);
+  }, [extent, theme]);
 
   // The clone is owned by this component; three.js reference-counts the
   // underlying image source, so disposing it leaves the cached original intact.

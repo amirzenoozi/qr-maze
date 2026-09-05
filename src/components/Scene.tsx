@@ -1,7 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { useShallow } from 'zustand/react/shallow';
 import { floorExtent } from '../lib/maze/layout';
-import { SKY } from '../lib/render/daylight';
+import { THEME } from '../lib/render/theme';
 import { useGameStore } from '../store/gameStore';
 import { CameraRig } from './CameraRig';
 import { Confetti } from './Confetti';
@@ -32,7 +32,7 @@ const SCAN_DPR: [number, number] = [1, 2];
  * only mounted once there is something to look at.
  */
 export function Scene(): React.JSX.Element | null {
-  const { maze, player, won, cameraMode, timeOfDay, skin, bump } = useGameStore(
+  const { maze, player, won, cameraMode, timeOfDay, skin, theme, bump } = useGameStore(
     useShallow((state) => ({
       maze: state.maze,
       player: state.player,
@@ -40,6 +40,7 @@ export function Scene(): React.JSX.Element | null {
       cameraMode: state.cameraMode,
       timeOfDay: state.timeOfDay,
       skin: state.skin,
+      theme: state.theme,
       bump: state.bump,
     })),
   );
@@ -49,7 +50,7 @@ export function Scene(): React.JSX.Element | null {
   const gameplay = cameraMode === 'gameplay';
   // The sun has to light the whole board, quiet zone included.
   const reach = floorExtent(maze.size) / 2;
-  const sky = SKY[timeOfDay];
+  const sky = THEME[theme].sky[timeOfDay];
 
   return (
     <Canvas
@@ -96,12 +97,12 @@ export function Scene(): React.JSX.Element | null {
         </>
       )}
 
-      <Floor maze={maze} cameraMode={cameraMode} />
-      <Fence maze={maze} cameraMode={cameraMode} />
-      <Walls maze={maze} cameraMode={cameraMode} />
-      <Flowers maze={maze} cameraMode={cameraMode} />
-      <Trees maze={maze} cameraMode={cameraMode} />
-      <Markers maze={maze} cameraMode={cameraMode} />
+      <Floor maze={maze} cameraMode={cameraMode} theme={theme} />
+      <Fence maze={maze} cameraMode={cameraMode} theme={theme} />
+      <Walls maze={maze} cameraMode={cameraMode} theme={theme} />
+      <Flowers maze={maze} cameraMode={cameraMode} theme={theme} />
+      <Trees maze={maze} cameraMode={cameraMode} theme={theme} />
+      <Markers maze={maze} cameraMode={cameraMode} theme={theme} />
       <ScanMarkers maze={maze} player={player} cameraMode={cameraMode} />
       <Confetti maze={maze} active={won} cameraMode={cameraMode} />
       <Player
@@ -109,6 +110,7 @@ export function Scene(): React.JSX.Element | null {
         player={player}
         cameraMode={cameraMode}
         timeOfDay={timeOfDay}
+        theme={theme}
         skin={skin}
         bump={bump}
       />
