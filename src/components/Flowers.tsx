@@ -49,6 +49,11 @@ export function Flowers({
     const random = mulberry32(maze.size * 7919 + maze.carvedCount * 104729 + maze.version);
     const result: Array<{ x: number; y: number; z: number; tint: string }> = [];
 
+    // A world that scatters nothing stops here. Without this, a zero density
+    // still admits the one random draw that comes back exactly 0, and the
+    // tint lookup would then index an empty palette.
+    if (density <= 0 || tints.length === 0) return result;
+
     for (let row = 0; row < maze.size && result.length < MAX_BLOSSOMS; row++) {
       for (let col = 0; col < maze.size && result.length < MAX_BLOSSOMS; col++) {
         if (maze.modules[row * maze.size + col] !== 1) continue;

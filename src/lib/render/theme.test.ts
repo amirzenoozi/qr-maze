@@ -7,19 +7,23 @@ import { DEFAULT_THEME, THEME, THEMES, type Surface } from './theme';
  */
 const FINDER_SIZE = 7;
 
-const STYLES = new Set([
-  'speckle',
-  'tufted',
-  'streaked',
-  'grains',
-  'clumped',
-  'planks',
-  'petal',
-  'flat',
-  'grid',
-]);
-
 const HEX = /^#[0-9a-f]{6}$/;
+
+/**
+ * Painting needs a canvas and the suite runs in Node, so the tests supply a
+ * stub that records nothing and only has to not throw.
+ */
+function stubCanvas(): void {
+  const context = {
+    fillStyle: '',
+    fillRect: () => {},
+    clearRect: () => {},
+  };
+
+  (globalThis as Record<string, unknown>).document = {
+    createElement: () => ({ width: 0, height: 0, getContext: () => context }),
+  };
+}
 
 function surfaces(themeId: (typeof THEMES)[number]): Surface[] {
   return Object.values(THEME[themeId].surfaces);
@@ -32,14 +36,25 @@ describe('theme catalogue', () => {
     expect(Object.keys(THEME).sort()).toEqual([...THEMES].sort());
   });
 
-  it.each(THEMES)('%s names a painter that exists for every surface', (themeId) => {
+  it.each(THEMES)('%s gives every surface a usable palette', (themeId) => {
     for (const surface of surfaces(themeId)) {
-      expect(STYLES.has(surface.style)).toBe(true);
+      // `flat` and `grid` paint from `base[0]` alone, so an empty palette is
+      // an exception rather than a blank texture.
       expect(surface.base.length).toBeGreaterThan(0);
       for (const colour of [...surface.base, surface.light, surface.dark]) {
         expect(colour).toMatch(HEX);
       }
     }
+  });
+
+  it.each(THEMES)('%s paints without throwing', async (themeId) => {
+    stubCanvas();
+    const { getPixelTextures } = await import('./pixelTextures');
+
+    // Runs every painter the theme names against its real colours. Cheaper
+    // than asserting a style list by hand, and it actually executes the code
+    // rather than checking a name against a list that can drift from it.
+    expect(() => getPixelTextures(themeId)).not.toThrow();
   });
 
   it.each(THEMES)('%s keeps its landmark inside the finder pattern', (themeId) => {
