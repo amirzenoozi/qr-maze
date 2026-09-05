@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-09-05
+
 ### Added
 
 - Your body, difficulty and sky are remembered between visits.
@@ -372,7 +374,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.11.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.0...HEAD
+[1.12.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.11.0...v1.12.0
 [1.11.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.8.0...v1.9.0
