@@ -60,7 +60,9 @@ export type SurfaceStyle =
   /** Copper runs on solder mask, each ending in a pad. */
   | 'traces'
   /** Sedimentary banding: horizontal layers of slightly different tone. */
-  | 'strata';
+  | 'strata'
+  /** Banding under a column of carved marks, for an inscribed shaft. */
+  | 'glyphs';
 
 /**
  * One painted surface.
@@ -78,6 +80,23 @@ export interface Surface {
   readonly edge?: string;
   /** Sparse dots over the top: blossom in a canopy, a knot in timber. */
   readonly specks?: readonly string[];
+  /**
+   * Canvas edge in pixels, overriding the slot's default.
+   *
+   * Raise it when a surface needs more room for its marks than the default
+   * gives. Nothing else changes: the texture still covers the same face, it
+   * just carries more pixels across it.
+   */
+  readonly resolution?: number;
+  /**
+   * How many QR modules one repeat of this texture spans. Floor only.
+   *
+   * At the default of one, every module gets an identical tile, and at the
+   * resolution this game renders at that repetition reads as a grid. Spanning
+   * several modules breaks the pattern up without adding detail per module,
+   * so long as `resolution` rises in step to hold the pixels-per-module fixed.
+   */
+  readonly tile?: number;
 }
 
 /** One stacked tier of a finder-pattern landmark. */
@@ -120,6 +139,69 @@ export interface ThemeDecor {
     /** Per-instance tints multiplied over the texture. */
     readonly tints: readonly string[];
     readonly emissive: boolean;
+  };
+
+  /**
+   * Drift banked against the base of every wall block.
+   *
+   * Sand piles against anything vertical, snow does the same, moss creeps up
+   * out of the ground. It is the cheapest detail in the game that sits exactly
+   * where the camera looks, since the view is pitched down far enough that the
+   * first two units of height are most of the frame.
+   *
+   * A skirt wider than its cell overhangs into the corridor, where the
+   * player's underside sits at 0.12 world units. Keep `height` below that or
+   * the body clips through the pile it should be passing over.
+   */
+  readonly skirt?: {
+    readonly height: number;
+    /** Footprint as a multiple of one cell. Above 1 it overhangs. */
+    readonly spread: number;
+    readonly colour: string;
+  };
+
+  /**
+   * Flat decals strewn over the cells the player can walk on.
+   *
+   * Deliberately flat rather than modelled. A refused move gives almost no
+   * feedback beyond the knock, so a three-dimensional object standing in a
+   * one-module corridor would read as a wall the player cannot pass.
+   */
+  readonly ground?: {
+    /** Share of walkable cells carrying one. Zero renders none. */
+    readonly density: number;
+    readonly size: number;
+    readonly tints: readonly string[];
+  };
+
+  /**
+   * Specks drifting through the air: sand, snow, pollen, sparks.
+   *
+   * Held low on purpose. The camera's top edge still points below the
+   * horizon, so anything above roughly two units leaves the frame.
+   */
+  readonly drift?: {
+    readonly count: number;
+    readonly size: number;
+    readonly colour: string;
+    /** World units per second along X. */
+    readonly speed: number;
+    /** Ceiling in world units. */
+    readonly height: number;
+  };
+
+  /**
+   * Per-block variation, so a wall reads as built rather than stamped.
+   *
+   * Applied in gameplay only. The top-down view needs every block the same
+   * flat black; a tinted module there would binarise grey and cost the symbol
+   * a codeword for the sake of decoration.
+   */
+  readonly wallVariation?: {
+    /** Largest darkening of a block, 0..1. */
+    readonly tint: number;
+    /** Largest downward height scale, 0..1. */
+    readonly shrink: number;
   };
 
   /** The two cells that mean something. */
@@ -682,13 +764,22 @@ export const THEME: Record<ThemeId, Theme> = {
         base: ['#eeddb8', '#eeddb8', '#eeddb8', '#f6e8c8', '#e2cfa6', '#faf0d8'],
         light: '#faf0d8',
         dark: '#d4bf95',
+        // One tile every four modules, at four times the pixels, so the sand
+        // holds the same grain size while losing the per-module repeat.
+        resolution: 64,
+        tile: 4,
       },
+      // Marks sit low on the shaft. The camera is pitched down far enough
+      // that an obelisk's upper half is out of frame from any distance at
+      // which its carving could be read.
       trunk: {
-        style: 'strata',
+        style: 'glyphs',
         base: ['#b99a6f', '#b99a6f', '#a88a62', '#c9a97c'],
-        light: '#c9a97c',
-        dark: '#8f7350',
+        light: '#dcc39a',
+        dark: '#7d6248',
         edge: '#dcc39a',
+        // A glyph needs more than the eight pixels a shaft usually gets.
+        resolution: 16,
       },
       crown: {
         style: 'speckle',
@@ -733,6 +824,35 @@ export const THEME: Record<ThemeId, Theme> = {
         size: 0.26,
         tints: ['#b99a6f', '#a88a62', '#c9a97c', '#d6b98c'],
         emissive: false,
+      },
+      skirt: {
+        // Under the player's 0.12 underside, so the body passes over the
+        // drift rather than through it.
+        height: 0.09,
+        spread: 1.24,
+        // Between the floor and the block, which is what a bank of sand
+        // against a wall actually looks like.
+        colour: '#e3cfa0',
+      },
+      ground: {
+        // Loose stones on the path. Sparse: the emptiness is the point.
+        density: 0.16,
+        size: 0.24,
+        tints: ['#c9a97c', '#b99a6f', '#a88a62', '#d6b98c'],
+      },
+      drift: {
+        // Blown sand. The stillest world in the game without it.
+        count: 220,
+        size: 0.07,
+        colour: '#f6e8c8',
+        speed: 1.6,
+        height: 2.2,
+      },
+      wallVariation: {
+        // Ruins are weathered unevenly; identical blocks read as extruded
+        // pixels rather than as cut stone.
+        tint: 0.16,
+        shrink: 0.07,
       },
       exit: {
         // Everything here is sand-coloured, so the exit goes cold to separate

@@ -16,6 +16,20 @@ import { THEME, type Surface, type SurfaceStyle, type ThemeId } from './theme';
  * here can affect whether the symbol decodes.
  */
 
+/**
+ * Canvas edge a painter's feature counts are tuned against.
+ *
+ * Every count below is written for a tile this size. A surface asking for a
+ * larger canvas covers proportionally more area, so a fixed count would leave
+ * it sparse; scaling by area keeps the density the painter was tuned for.
+ */
+const TILE_PIXELS = 16;
+
+/** How many times to repeat a feature tuned for a `TILE_PIXELS` canvas. */
+function repeats(size: number, base: number): number {
+  return Math.max(1, Math.round(base * (size / TILE_PIXELS) ** 2));
+}
+
 /** Pick an entry from a palette using `random`. */
 function pick(random: () => number, palette: readonly string[]): string {
   return palette[Math.floor(random() * palette.length)];
@@ -58,7 +72,8 @@ const paintSpeckle: Painter = (context, size, random, surface) => {
 const paintTufted: Painter = (context, size, random, surface) => {
   speckle(context, size, random, surface.base);
 
-  for (let i = 0; i < 10; i++) {
+  const tufts = repeats(size, 10);
+  for (let i = 0; i < tufts; i++) {
     const x = Math.floor(random() * size);
     const y = Math.floor(random() * size);
     context.fillStyle = random() > 0.5 ? surface.dark : surface.light;
@@ -86,7 +101,8 @@ const paintStreaked: Painter = (context, size, random, surface) => {
 const paintGrains: Painter = (context, size, random, surface) => {
   speckle(context, size, random, surface.base);
 
-  for (let i = 0; i < 6; i++) {
+  const grains = repeats(size, 6);
+  for (let i = 0; i < grains; i++) {
     const x = Math.floor(random() * (size - 1));
     const y = Math.floor(random() * (size - 1));
     context.fillStyle = surface.dark;
@@ -98,7 +114,8 @@ const paintGrains: Painter = (context, size, random, surface) => {
 const paintClumped: Painter = (context, size, random, surface) => {
   speckle(context, size, random, surface.base);
 
-  for (let i = 0; i < 8; i++) {
+  const clumps = repeats(size, 8);
+  for (let i = 0; i < clumps; i++) {
     const x = Math.floor(random() * (size - 2));
     const y = Math.floor(random() * (size - 2));
     context.fillStyle = random() > 0.5 ? surface.light : surface.dark;
@@ -107,7 +124,8 @@ const paintClumped: Painter = (context, size, random, surface) => {
 
   const specks = surface.specks;
   if (specks?.length) {
-    for (let i = 0; i < 5; i++) {
+    const dots = repeats(size, 5);
+    for (let i = 0; i < dots; i++) {
       context.fillStyle = pick(random, specks);
       context.fillRect(Math.floor(random() * size), Math.floor(random() * size), 1, 1);
     }
@@ -130,7 +148,8 @@ const paintPlanks: Painter = (context, size, random, surface) => {
   }
 
   // Short streaks read as grain once magnified.
-  for (let i = 0; i < 10; i++) {
+  const streaks = repeats(size, 10);
+  for (let i = 0; i < streaks; i++) {
     const x = Math.floor(random() * (size - 3));
     const y = Math.floor(random() * size);
     context.fillStyle = random() > 0.5 ? surface.dark : surface.light;
@@ -242,7 +261,8 @@ const paintTraces: Painter = (context, size, random, surface) => {
   // Darker relief under a few runs, so the copper sits on the board rather
   // than floating on it.
   context.fillStyle = surface.dark;
-  for (let i = 0; i < 4; i++) {
+  const relief = repeats(size, 4);
+  for (let i = 0; i < relief; i++) {
     context.fillRect(Math.floor(random() * size), Math.floor(random() * size), 1, 1);
   }
 };
@@ -277,6 +297,57 @@ const paintStrata: Painter = (context, size, random, surface) => {
   }
 };
 
+/**
+ * A small vocabulary of carved marks, four pixels wide and three tall.
+ *
+ * Real hieroglyphs are far denser than this; what survives being magnified
+ * from a handful of pixels is a silhouette, so each one is reduced to the
+ * least it can be and still not read as noise.
+ */
+const GLYPHS: readonly (readonly string[])[] = [
+  ['.##.', '#..#', '.##.'],
+  ['#...', '###.', '#..#'],
+  ['.#.#', '#.#.', '.#.#'],
+  ['..#.', '####', '..#.'],
+];
+
+/** Height of one glyph plus the gap under it, in texture pixels. */
+const GLYPH_PITCH = 4;
+
+/**
+ * Banded stone under a column of carved marks.
+ *
+ * The marks are stacked upwards from the bottom of the tile rather than
+ * centred. The gameplay camera is pitched down far enough that the top of a
+ * tall landmark leaves the frame at any distance you could read it from, so
+ * carving the upper half would be carving something nobody sees.
+ */
+const paintGlyphs: Painter = (context, size, random, surface) => {
+  paintStrata(context, size, random, surface);
+
+  const rows = Math.max(1, Math.floor(size / (GLYPH_PITCH * 2)));
+  const left = Math.max(0, Math.floor((size - 4) / 2));
+
+  for (let row = 0; row < rows; row++) {
+    const glyph = GLYPHS[Math.floor(random() * GLYPHS.length)];
+    const top = size - (row + 1) * GLYPH_PITCH;
+
+    glyph.forEach((line, y) => {
+      for (let x = 0; x < line.length; x++) {
+        if (line[x] !== '#') continue;
+        // The mark is cut into the stone, so it reads as shadow with a lit
+        // lip under it. One pixel of relief is what stops it looking painted.
+        context.fillStyle = surface.dark;
+        context.fillRect(left + x, top + y, 1, 1);
+        if (y === glyph.length - 1 && top + y + 1 < size) {
+          context.fillStyle = surface.light;
+          context.fillRect(left + x, top + y + 1, 1, 1);
+        }
+      }
+    });
+  }
+};
+
 const PAINTERS: Record<SurfaceStyle, Painter> = {
   speckle: paintSpeckle,
   tufted: paintTufted,
@@ -289,6 +360,7 @@ const PAINTERS: Record<SurfaceStyle, Painter> = {
   grid: paintGrid,
   traces: paintTraces,
   strata: paintStrata,
+  glyphs: paintGlyphs,
 };
 
 /** Paint a surface and wrap it with pixel-art-appropriate filtering. */
@@ -374,6 +446,16 @@ const SEEDS = {
   blossom: 2468,
 } as const;
 
+/**
+ * Paint one slot at the surface's own resolution, or the slot's default.
+ *
+ * The default is what every theme gets unless it asks for more, so raising it
+ * for one surface leaves every other texture in the game untouched.
+ */
+function paint(seed: number, surface: Surface, fallback: number): THREE.Texture {
+  return createTexture(surface.resolution ?? fallback, seed, surface);
+}
+
 const cache = new Map<ThemeId, PixelTextures>();
 
 /** Lazily build (and then reuse) one theme's pixel-art texture set. */
@@ -384,13 +466,13 @@ export function getPixelTextures(themeId: ThemeId): PixelTextures {
   const { surfaces, decor } = THEME[themeId];
 
   const textures: PixelTextures = {
-    grassTop: createTexture(16, SEEDS.grassTop, surfaces.wallTop),
-    hedgeSide: createTexture(16, SEEDS.hedgeSide, surfaces.wallSide),
-    path: createTexture(16, SEEDS.path, surfaces.floor),
-    bark: createTexture(8, SEEDS.bark, surfaces.trunk),
-    leaves: createTexture(16, SEEDS.leaves, surfaces.crown),
-    wood: createTexture(16, SEEDS.wood, surfaces.border),
-    blossom: createTexture(8, SEEDS.blossom, surfaces.scatter),
+    grassTop: paint(SEEDS.grassTop, surfaces.wallTop, 16),
+    hedgeSide: paint(SEEDS.hedgeSide, surfaces.wallSide, 16),
+    path: paint(SEEDS.path, surfaces.floor, 16),
+    bark: paint(SEEDS.bark, surfaces.trunk, 8),
+    leaves: paint(SEEDS.leaves, surfaces.crown, 16),
+    wood: paint(SEEDS.wood, surfaces.border, 16),
+    blossom: paint(SEEDS.blossom, surfaces.scatter, 8),
     checker: createChecker(decor.exit.flagColours),
   };
 

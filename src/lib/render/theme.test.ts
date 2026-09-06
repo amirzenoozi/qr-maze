@@ -132,6 +132,94 @@ describe('theme catalogue', () => {
  * values transcribed out of the components, so a refactor that quietly
  * repaints the default world fails here rather than in someone's browser.
  */
+/**
+ * Underside of the player body: it rests at 1.4 radii and is 1 radius across,
+ * so 0.4 * 0.3. Anything taller than this that overhangs a corridor is
+ * something the body drives through rather than over.
+ */
+const PLAYER_UNDERSIDE = 0.12;
+
+/**
+ * Height that is still in frame ten units ahead of the player.
+ *
+ * The gameplay camera sits 9.5 up and 10 back with a 50-degree field of view,
+ * so it is pitched 43.5 degrees down and its top edge still points 18.5
+ * degrees below horizontal. That is what makes airborne decoration a
+ * low-altitude business: put it higher and nobody sees it.
+ */
+const SIGHT_LINE = 2.8;
+
+/** Texture pixels one module gets at the default tile size. */
+const BASE_TILE_PIXELS = 16;
+
+describe('ground detail', () => {
+  it.each(ALL)('%s banks a drift the body can pass over', (themeId) => {
+    const skirt = THEME[themeId].decor.skirt;
+    if (!skirt) return;
+
+    expect(skirt.height).toBeGreaterThan(0);
+    expect(skirt.spread).toBeGreaterThan(0);
+    expect(skirt.colour).toMatch(HEX);
+
+    // A pile confined to its own cell can be any height it likes; one that
+    // spills into the corridor has to stay under the body.
+    if (skirt.spread > 1) {
+      expect(skirt.height).toBeLessThan(PLAYER_UNDERSIDE);
+    }
+  });
+
+  it.each(ALL)('%s strews the path with flat clutter', (themeId) => {
+    const ground = THEME[themeId].decor.ground;
+    if (!ground) return;
+
+    expect(ground.density).toBeGreaterThan(0);
+    expect(ground.density).toBeLessThanOrEqual(1);
+    expect(ground.size).toBeGreaterThan(0);
+    expect(ground.tints.length).toBeGreaterThan(0);
+    ground.tints.forEach((tint) => expect(tint).toMatch(HEX));
+  });
+
+  it.each(ALL)('%s keeps its drifting specks in frame', (themeId) => {
+    const drift = THEME[themeId].decor.drift;
+    if (!drift) return;
+
+    expect(drift.count).toBeGreaterThan(0);
+    expect(drift.size).toBeGreaterThan(0);
+    expect(drift.speed).toBeGreaterThan(0);
+    expect(drift.colour).toMatch(HEX);
+    expect(drift.height).toBeGreaterThan(0);
+    expect(drift.height).toBeLessThanOrEqual(SIGHT_LINE);
+  });
+
+  it.each(ALL)('%s never varies a wall out of existence', (themeId) => {
+    const variation = THEME[themeId].decor.wallVariation;
+    if (!variation) return;
+
+    expect(variation.tint).toBeGreaterThanOrEqual(0);
+    expect(variation.tint).toBeLessThan(1);
+    expect(variation.shrink).toBeGreaterThanOrEqual(0);
+    // At 1 a block could shrink to nothing and stop reading as a wall.
+    expect(variation.shrink).toBeLessThan(1);
+  });
+
+  it.each(ALL)('%s holds pixels per module fixed across a wide floor', (themeId) => {
+    const floor = THEME[themeId].surfaces.floor;
+    if (!floor.tile) return;
+
+    // Spanning several modules is only a fix for the visible repeat if the
+    // canvas grows with it. Without this the sand would simply get coarser.
+    expect(floor.resolution).toBe(BASE_TILE_PIXELS * floor.tile);
+  });
+
+  it('dresses the desert with all four', () => {
+    const desert = THEME.desert.decor;
+    expect(desert.skirt).toBeDefined();
+    expect(desert.ground).toBeDefined();
+    expect(desert.drift).toBeDefined();
+    expect(desert.wallVariation).toBeDefined();
+  });
+});
+
 describe('park is unchanged', () => {
   const park = THEME.park;
 
@@ -164,6 +252,17 @@ describe('park is unchanged', () => {
       '#ddd4b2',
       '#f7f2e2',
     ]);
+  });
+
+  it('carries none of the added ground detail', () => {
+    // The detail slots were added for the desert. Park predates them and has
+    // to keep rendering exactly as it always has.
+    expect(park.decor.skirt).toBeUndefined();
+    expect(park.decor.ground).toBeUndefined();
+    expect(park.decor.drift).toBeUndefined();
+    expect(park.decor.wallVariation).toBeUndefined();
+    expect(park.surfaces.floor.tile).toBeUndefined();
+    expect(park.surfaces.floor.resolution).toBeUndefined();
   });
 
   it('keeps the trees, the fence and the flag', () => {

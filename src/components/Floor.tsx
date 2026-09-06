@@ -2,7 +2,7 @@ import { useLayoutEffect, useMemo } from 'react';
 import { floorExtent, scanExtent } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
 import { getPixelTextures } from '../lib/render/pixelTextures';
-import type { ThemeId } from '../lib/render/theme';
+import { THEME, type ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 interface FloorProps {
@@ -29,15 +29,25 @@ export function Floor({ maze, cameraMode, theme }: FloorProps): React.JSX.Elemen
   const extent =
     cameraMode === 'scan' ? scanExtent(maze.size) : floorExtent(maze.size);
 
-  // One texture tile per QR module, so the gravel grid lines up with the maze
-  // grid instead of drifting across it. `repeat` is per-texture but the pixel
-  // data is shared, so this clones the cached texture rather than mutating it.
+  /**
+   * The floor tiles on the module grid rather than drifting across it, so its
+   * texture lines up with the maze.
+   *
+   * A theme may span several modules per tile. One tile per module is the
+   * simplest thing that lines up, but at the resolution this game renders at
+   * the repeat itself becomes visible as a grid; spanning four breaks that up
+   * while the module grid still falls on tile boundaries.
+   *
+   * `repeat` is per-texture but the pixel data is shared, so this clones the
+   * cached texture rather than mutating it.
+   */
+  const tile = THEME[theme].surfaces.floor.tile ?? 1;
   const path = useMemo(() => {
     const texture = getPixelTextures(theme).path.clone();
-    texture.repeat.set(extent, extent);
+    texture.repeat.set(extent / tile, extent / tile);
     texture.needsUpdate = true;
     return texture;
-  }, [extent, theme]);
+  }, [extent, theme, tile]);
 
   // The clone is owned by this component; three.js reference-counts the
   // underlying image source, so disposing it leaves the cached original intact.

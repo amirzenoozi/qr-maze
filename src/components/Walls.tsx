@@ -2,8 +2,9 @@ import { useLayoutEffect, useMemo, useRef } from 'react';
 import * as THREE from 'three';
 import { CELL_SIZE, WALL_HEIGHT, cellToWorld } from '../lib/maze/layout';
 import type { Maze } from '../lib/maze/types';
+import { mulberry32 } from '../lib/random';
 import { getPixelTextures } from '../lib/render/pixelTextures';
-import type { ThemeId } from '../lib/render/theme';
+import { THEME, type ThemeId } from '../lib/render/theme';
 import type { CameraMode } from '../store/gameStore';
 
 /**
@@ -32,6 +33,13 @@ interface WallsProps {
 export function Walls({ maze, cameraMode, theme }: WallsProps): React.JSX.Element {
   const meshRef = useRef<THREE.InstancedMesh>(null);
   const scan = cameraMode === 'scan';
+
+  /**
+   * Gameplay only. The top-down view needs every block the same flat black; a
+   * tinted module there would binarise grey and cost the symbol a codeword for
+   * the sake of decoration.
+   */
+  const variation = scan ? undefined : THEME[theme].decor.wallVariation;
 
   // Positions are derived once per maze, not per frame.
   const positions = useMemo(() => {
@@ -82,13 +90,33 @@ export function Walls({ maze, cameraMode, theme }: WallsProps): React.JSX.Elemen
     if (!mesh) return;
 
     const matrix = new THREE.Matrix4();
+    const colour = new THREE.Color();
+    // Seeded from stable maze identity, so the weathering does not reshuffle
+    // on every re-render.
+    const random = mulberry32(maze.size * 3517 + maze.carvedCount * 92821);
+
     positions.forEach(([x, z], i) => {
-      matrix.setPosition(x, WALL_HEIGHT / 2, z);
+      // Shrink only, never grow: wall height is what the player can see over,
+      // and a block that got taller would take sight line away.
+      const height = variation ? WALL_HEIGHT * (1 - variation.shrink * random()) : WALL_HEIGHT;
+      matrix.makeScale(1, height / WALL_HEIGHT, 1);
+      matrix.setPosition(x, height / 2, z);
       mesh.setMatrixAt(i, matrix);
+
+      if (variation) {
+        // Multiplied over the texture, so a block only ever darkens.
+        mesh.setColorAt(i, colour.setScalar(1 - variation.tint * random()));
+      } else if (mesh.instanceColor) {
+        // Coming from a theme that did vary, the old tints are still on the
+        // buffer; white is the identity this material expects.
+        mesh.setColorAt(i, colour.setScalar(1));
+      }
     });
+
     mesh.instanceMatrix.needsUpdate = true;
+    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
     mesh.computeBoundingSphere();
-  }, [positions, materials]);
+  }, [positions, materials, variation, maze]);
 
   const castShadow = !scan && positions.length <= SHADOW_BUDGET;
 
