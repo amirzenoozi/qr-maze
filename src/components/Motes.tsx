@@ -16,6 +16,9 @@ const FLOOR_CLEARANCE = 0.15;
 /** Vertical wander, in world units. */
 const BOB = 0.12;
 
+/** Sideways wander while falling, in world units. */
+const SWAY = 0.18;
+
 interface MotesProps {
   readonly maze: Maze;
   readonly cameraMode: CameraMode;
@@ -29,8 +32,9 @@ interface MotesProps {
  * horizon, so a speck much above two units is outside the frame no matter
  * where the player stands — height here buys nothing and costs instances.
  *
- * They cross the board on the X axis and wrap, which is why the count can stay
- * small: the same two hundred specks pass through shot indefinitely.
+ * They wrap rather than respawn, which is why the count can stay small: the
+ * same few hundred specks pass through shot indefinitely. Blown specks wrap
+ * across X, falling ones wrap from the floor back to the ceiling.
  */
 export function Motes({ maze, cameraMode, theme }: MotesProps): React.JSX.Element | null {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -64,18 +68,32 @@ export function Motes({ maze, cameraMode, theme }: MotesProps): React.JSX.Elemen
     const matrix = new THREE.Matrix4();
     const half = span / 2;
     const elapsed = state.clock.elapsedTime;
+    const falling = drift?.fall === true;
+    // Keep the wrap span positive even if a theme sets a ceiling on the floor.
+    const ceiling = Math.max(drift?.height ?? 0, FLOOR_CLEARANCE + 0.5);
 
     specks.forEach((speck, i) => {
-      speck.x += speck.rate * delta;
-      // Wrap rather than respawn: a speck leaving one edge is the same speck
-      // entering the other, so the field never thins out or clumps.
-      if (speck.x > half) speck.x -= span;
+      let x: number;
+      let y: number;
 
-      matrix.setPosition(
-        speck.x,
-        speck.y + Math.sin(elapsed + speck.phase) * BOB,
-        speck.z,
-      );
+      if (falling) {
+        speck.y -= speck.rate * delta;
+        // A speck landing is the same speck starting again from the ceiling,
+        // so the fall never thins out.
+        if (speck.y < FLOOR_CLEARANCE) speck.y += ceiling - FLOOR_CLEARANCE;
+        y = speck.y;
+        // Sway rather than bob: snow drifts sideways on the way down.
+        x = speck.x + Math.sin(elapsed + speck.phase) * SWAY;
+      } else {
+        speck.x += speck.rate * delta;
+        // Wrap rather than respawn: a speck leaving one edge is the same speck
+        // entering the other, so the field never thins out or clumps.
+        if (speck.x > half) speck.x -= span;
+        x = speck.x;
+        y = speck.y + Math.sin(elapsed + speck.phase) * BOB;
+      }
+
+      matrix.setPosition(x, y, speck.z);
       mesh.setMatrixAt(i, matrix);
     });
 

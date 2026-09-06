@@ -239,6 +239,39 @@ describe('ground detail', () => {
     expect(floor.resolution).toBe(BASE_TILE_PIXELS * floor.tile);
   });
 
+  it.each(ALL)('%s settles something sensible on its rails', (id) => {
+    const railCap = THEME[id].decor.border.railCap;
+    if (!railCap) return;
+
+    expect(railCap.colour).toMatch(HEX);
+    expect(railCap.height).toBeGreaterThan(0);
+    // Taller than the rail it sits on and it stops reading as settled.
+    expect(railCap.height).toBeLessThan(0.2);
+    expect(railCap.overhang).toBeGreaterThanOrEqual(0);
+  });
+
+  it.each(ALL)('%s picks one weather for its specks', (id) => {
+    const drift = THEME[id].decor.drift;
+    if (!drift) return;
+
+    // Optional, but never anything but a flag: the render loop branches on it.
+    if (drift.fall !== undefined) expect(typeof drift.fall).toBe('boolean');
+  });
+
+  it('lets the snow fall rather than blow', () => {
+    const snow = THEME.snow.decor;
+
+    expect(snow.drift?.fall).toBe(true);
+    expect(snow.skirt).toBeDefined();
+    expect(snow.ground).toBeDefined();
+    expect(snow.wallVariation).toBeDefined();
+    expect(snow.border.railCap).toBeDefined();
+    expect(snow.landmark.variance).toBeGreaterThan(0);
+    // Depth, not dirt: darkening white reads as grime, so the tint stays well
+    // under the shrink that carries the effect.
+    expect(snow.wallVariation!.tint).toBeLessThan(snow.wallVariation!.shrink);
+  });
+
   it('dresses the desert with all four', () => {
     const desert = THEME.desert.decor;
     expect(desert.skirt).toBeDefined();
@@ -308,6 +341,7 @@ describe('park is unchanged', () => {
     expect(park.decor.landmark.shape).toBe('box');
     expect(park.decor.landmark.arms).toBeUndefined();
     expect(park.decor.landmark.variance).toBeUndefined();
+    expect(park.decor.border.railCap).toBeUndefined();
     expect(park.decor.landmark.emissive).toBeUndefined();
     expect(park.decor.landmark.tiers).toEqual([
       { width: 4.4, height: 1.1, y: 3.1 },

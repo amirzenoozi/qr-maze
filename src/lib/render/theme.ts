@@ -155,6 +155,18 @@ export interface ThemeDecor {
     /** Heights to run rails at. Empty renders posts alone. */
     readonly railLevels: readonly number[];
     readonly capped: boolean;
+    /**
+     * Something settled along the top of each rail: snow, moss, dust.
+     *
+     * Ties the border into the world. Without it a fence is the one object on
+     * the board the weather has never touched.
+     */
+    readonly railCap?: {
+      readonly colour: string;
+      readonly height: number;
+      /** How far it laps over each side of the rail, in world units. */
+      readonly overhang: number;
+    };
   };
 
   /** What grows on top of the wall blocks. */
@@ -210,10 +222,18 @@ export interface ThemeDecor {
     readonly count: number;
     readonly size: number;
     readonly colour: string;
-    /** World units per second along X. */
+    /** World units per second along the axis of travel. */
     readonly speed: number;
     /** Ceiling in world units. */
     readonly height: number;
+    /**
+     * Fall instead of blowing across.
+     *
+     * Blown specks cross on X and wrap at the far edge; falling ones descend
+     * and wrap at the floor, swaying sideways on the way down. Same instances
+     * either way, so weather costs nothing beyond the flag.
+     */
+    readonly fall?: boolean;
   };
 
   /**
@@ -531,7 +551,7 @@ export const THEME: Record<ThemeId, Theme> = {
 
   snow: {
     label: 'Snow',
-    blurb: 'Snow-capped stone and pines in a hard winter light.',
+    blurb: 'Snow-capped stone and pines under steady snowfall.',
 
     surfaces: {
       wallTop: {
@@ -553,6 +573,8 @@ export const THEME: Record<ThemeId, Theme> = {
         base: ['#e4edf6', '#e4edf6', '#e4edf6', '#f0f6fb', '#d6e2ee', '#f7fbfe'],
         light: '#ffffff',
         dark: '#c3d2e0',
+        resolution: 64,
+        tile: 4,
       },
       trunk: {
         style: 'speckle',
@@ -596,11 +618,14 @@ export const THEME: Record<ThemeId, Theme> = {
           { width: 1.8, height: 1.0, y: 4.3 },
         ],
         shape: 'tapered',
+        // Three pines cut to one height read as manufactured.
+        variance: 0.12,
       },
       border: {
         postHeight: 1.5,
         railLevels: [0.52, 1.08],
         capped: true,
+        railCap: { colour: '#f4f9ff', height: 0.09, overhang: 0.05 },
       },
       scatter: {
         // Drifts, not flowers: thinner than the meadow, since a white scatter
@@ -610,6 +635,29 @@ export const THEME: Record<ThemeId, Theme> = {
         tints: ['#ffffff', '#eef5fb', '#dce9f5', '#cfe0ee'],
         emissive: false,
       },
+      // Brighter than the floor, not darker: snow banked against a wall
+      // catches more light than the trodden path in front of it.
+      skirt: { height: 0.1, spread: 1.3, colour: '#fbfdff' },
+      // Ice, not pebbles. A darker speck on snow reads as grit; a blue one
+      // reads as cold, which is the whole point of the world.
+      ground: {
+        density: 0.13,
+        size: 0.3,
+        tints: ['#cfe3f2', '#bcd8ec', '#dceaf6', '#c6dced'],
+      },
+      // Shadow-tinted rather than white. A white flake against a white floor
+      // under the brightest night sky in the game is an invisible flake.
+      drift: {
+        count: 320,
+        size: 0.06,
+        colour: '#dbe9f8',
+        speed: 1.1,
+        height: 2.2,
+        fall: true,
+      },
+      // Almost all depth, almost no tint: darkening white goes grey, which
+      // reads as dirty snow rather than deep snow.
+      wallVariation: { tint: 0.06, shrink: 0.14 },
       exit: {
         // Warm markers on purpose. Everything else here is cold, so the one
         // orange object on the board is unmistakably the thing to walk to.

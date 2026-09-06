@@ -50,6 +50,7 @@ export function Fence({
   theme,
 }: FenceProps): React.JSX.Element | null {
   const border = THEME[theme].decor.border;
+  const railCap = border.railCap;
   const postHeight = CELL_SIZE * border.postHeight;
   const railLevels = border.railLevels;
   const postsRef = useRef<THREE.InstancedMesh>(null);
@@ -106,10 +107,16 @@ export function Fence({
       post: new THREE.MeshStandardMaterial({ map: postMap, roughness: 0.85 }),
       cap: new THREE.MeshStandardMaterial({ map: capMap, roughness: 0.85 }),
       rail: new THREE.MeshStandardMaterial({ map: railMap, roughness: 0.85 }),
+      // Untextured on purpose: settled snow is the one flat surface out here,
+      // and a wood grain showing through it would undo the effect.
+      railCap: new THREE.MeshStandardMaterial({
+        color: railCap?.colour ?? '#ffffff',
+        roughness: 1,
+      }),
     };
     // The theme repaints the timber, so it invalidates these the same way a
     // change of rail length does.
-  }, [railLength, postHeight, theme]);
+  }, [railLength, postHeight, railCap, theme]);
 
   // Clones and materials are owned here, so they are released on change.
   useLayoutEffect(() => {
@@ -170,6 +177,48 @@ export function Fence({
       {railLevels.map((level) => CELL_SIZE * level).map((y) => (
         <group key={y}>
           {/* North and south rails run along X. */}
+          {railCap && (
+            <>
+              <mesh
+                position={[0, y + RAIL_HEIGHT / 2 + railCap.height / 2, -half]}
+                material={materials.railCap}
+                castShadow
+              >
+                <boxGeometry
+                  args={[railLength, railCap.height, RAIL_DEPTH + railCap.overhang * 2]}
+                />
+              </mesh>
+              <mesh
+                position={[0, y + RAIL_HEIGHT / 2 + railCap.height / 2, half]}
+                material={materials.railCap}
+                castShadow
+              >
+                <boxGeometry
+                  args={[railLength, railCap.height, RAIL_DEPTH + railCap.overhang * 2]}
+                />
+              </mesh>
+              <mesh
+                position={[-half, y + RAIL_HEIGHT / 2 + railCap.height / 2, 0]}
+                rotation={[0, Math.PI / 2, 0]}
+                material={materials.railCap}
+                castShadow
+              >
+                <boxGeometry
+                  args={[railLength, railCap.height, RAIL_DEPTH + railCap.overhang * 2]}
+                />
+              </mesh>
+              <mesh
+                position={[half, y + RAIL_HEIGHT / 2 + railCap.height / 2, 0]}
+                rotation={[0, Math.PI / 2, 0]}
+                material={materials.railCap}
+                castShadow
+              >
+                <boxGeometry
+                  args={[railLength, railCap.height, RAIL_DEPTH + railCap.overhang * 2]}
+                />
+              </mesh>
+            </>
+          )}
           <mesh position={[0, y, -half]} material={materials.rail} castShadow receiveShadow>
             <boxGeometry args={[railLength, RAIL_HEIGHT, RAIL_DEPTH]} />
           </mesh>
