@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - 2026-09-06
+
+### Added
+
+- Snowfall. Specks can now fall and wrap at the floor instead of blowing across
+  and wrapping at the edge, swaying sideways on the way down. Same instances
+  either way, so the weather costs nothing beyond the flag that picks it.
+- Snow settled along the fence rails, so the border is no longer the one thing
+  on the board the weather has never touched.
+- Ground detail for the snow: banks against every block, ice patches on the
+  path, uneven snow depth per block, and pines that vary in height.
+
+### Changed
+
+- The snow floor now spans four modules per texture tile, which stops the
+  packed snow reading as a lattice at the render scale the world is drawn at.
+
 ## [1.16.0] - 2026-09-06
 
 ### Changed
@@ -465,7 +482,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.16.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.17.0...HEAD
+[1.17.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.0...v1.14.1

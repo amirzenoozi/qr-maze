@@ -153,7 +153,7 @@ is treated as "no preference yet" rather than as an error.
 | World | Walls | Landmark | Border | Scatter |
 |---|---|---|---|---|
 | Park | Grass-topped hedges | Trees | Picket fence | Wildflowers |
-| Snow | Snow-capped stone | Pines | Picket fence | Drifts |
+| Snow | Snow-capped stone | Pines | Picket fence, snow on the rails | Drifts |
 | Desert | Banded sandstone | Cactus | Standing posts | Loose stones |
 
 Two more — Neon and Circuit — are built and tested but withheld from the
@@ -174,8 +174,14 @@ between the two a world ships.
 On top of that a world can declare ground detail: sand banked against the foot
 of every block, flat stones scattered along the path, specks drifting across on
 the wind, and a little height and shade taken off each block so a wall reads as
-masonry rather than one extruded colour. All four are optional and only the
-desert asks for them today. They are placed where the camera actually looks:
+masonry rather than one extruded colour. All four are optional. The desert and
+the snow both ask for them, and answer them differently: the desert scatters
+darker stones on sand and blows its specks across on the wind, while the snow
+scatters paler ice on packed snow and lets its specks fall. The snow also banks
+its drifts brighter than the floor rather than darker, and takes almost all of
+its per-block variation out of height rather than shade, because darkening
+white reads as dirty snow instead of deep snow. They are placed where the
+camera actually looks:
 the view is pitched forty-three degrees down with a fifty degree lens, so the
 top of the frame still points below the horizon and the sky is never on screen
 during play. Detail pays off on the floor and the first couple of units above
@@ -186,7 +192,8 @@ pattern — a ribbed shaft, two arms at different heights, a crown of flowers �
 and each of the three is dealt its own share of a ten percent height range,
 redrawn on every load. Dealing bands rather than drawing three loose numbers is
 what stops two corners landing on the same height, which is the only reason to
-vary them at all.
+vary them at all. The snow uses the same range on its pines, for the same
+reason: three conifers cut to one height read as manufactured.
 
 None of it reaches the code. Every piece unmounts in the top-down view, and the
 block tinting is skipped there too, because a grey module is neither black nor
