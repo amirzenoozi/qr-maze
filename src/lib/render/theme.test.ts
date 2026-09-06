@@ -85,6 +85,34 @@ describe('theme catalogue', () => {
     }
   });
 
+  it.each(ALL)('%s keeps its landmark arms inside the finder', (themeId) => {
+    const landmark = THEME[themeId].decor.landmark;
+    if (!landmark.arms) return;
+
+    // An arm reaches sideways from the shaft, so the finder's half-width is
+    // the budget. Overhang a corridor and the plant covers playable floor.
+    const armWidth = landmark.armWidth ?? landmark.trunkWidth * 0.5;
+    expect(armWidth).toBeGreaterThan(0);
+
+    for (const arm of landmark.arms) {
+      expect(Math.abs(arm.side)).toBe(1);
+      expect(arm.y).toBeGreaterThan(0);
+      expect(arm.reach).toBeGreaterThan(0);
+      expect(arm.rise).toBeGreaterThan(0);
+      expect(arm.reach + armWidth / 2).toBeLessThan(FINDER_SIZE / 2);
+    }
+  });
+
+  it.each(ALL)('%s varies its landmark height by a modest fraction', (themeId) => {
+    const { variance } = THEME[themeId].decor.landmark;
+    if (variance === undefined) return;
+
+    // Half would let one corner stand twice as tall as another, which stops
+    // reading as variation and starts reading as two different plants.
+    expect(variance).toBeGreaterThan(0);
+    expect(variance).toBeLessThan(0.5);
+  });
+
   it.each(ALL)('%s stacks its landmark tiers upwards', (themeId) => {
     const heights = THEME[themeId].decor.landmark.tiers.map((tier) => tier.y);
     expect([...heights].sort((a, b) => a - b)).toEqual(heights);
@@ -218,6 +246,15 @@ describe('ground detail', () => {
     expect(desert.drift).toBeDefined();
     expect(desert.wallVariation).toBeDefined();
   });
+
+  it('grows the desert landmark rather than standing one', () => {
+    const landmark = THEME.desert.decor.landmark;
+    expect(landmark.arms?.length).toBeGreaterThan(0);
+    expect(landmark.variance).toBeGreaterThan(0);
+    // Arms at matching heights read as a candelabra, not as a cactus.
+    const heights = landmark.arms?.map((arm) => arm.y) ?? [];
+    expect(new Set(heights).size).toBe(heights.length);
+  });
 });
 
 describe('park is unchanged', () => {
@@ -269,6 +306,8 @@ describe('park is unchanged', () => {
     expect(park.decor.landmark.trunkWidth).toBe(0.9);
     expect(park.decor.landmark.trunkHeight).toBe(2.6);
     expect(park.decor.landmark.shape).toBe('box');
+    expect(park.decor.landmark.arms).toBeUndefined();
+    expect(park.decor.landmark.variance).toBeUndefined();
     expect(park.decor.landmark.emissive).toBeUndefined();
     expect(park.decor.landmark.tiers).toEqual([
       { width: 4.4, height: 1.1, y: 3.1 },

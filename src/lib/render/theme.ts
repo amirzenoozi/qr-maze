@@ -61,8 +61,8 @@ export type SurfaceStyle =
   | 'traces'
   /** Sedimentary banding: horizontal layers of slightly different tone. */
   | 'strata'
-  /** Banding under a column of carved marks, for an inscribed shaft. */
-  | 'glyphs';
+  /** Vertical grooves and crests, for a ribbed plant. */
+  | 'ribbed';
 
 /**
  * One painted surface.
@@ -106,6 +106,19 @@ export interface LandmarkTier {
   readonly y: number;
 }
 
+/**
+ * One arm of a cactus: out from the shaft, then up.
+ *
+ * `y` is measured from the top of the block it stands on, `reach` is how far
+ * out the elbow sits, and `rise` is how far the forearm climbs from there.
+ */
+export interface CactusArm {
+  readonly side: -1 | 1;
+  readonly y: number;
+  readonly reach: number;
+  readonly rise: number;
+}
+
 export interface ThemeDecor {
   /**
    * The thing standing on each of the three finder patterns.
@@ -121,6 +134,19 @@ export interface ThemeDecor {
     readonly shape: 'box' | 'tapered';
     /** Set to make the crown glow rather than merely catch the light. */
     readonly emissive?: string;
+    /** Thickness of a cactus arm. Ignored by the other shapes. */
+    readonly armWidth?: number;
+    /** Arms branching off a cactus shaft. */
+    readonly arms?: readonly CactusArm[];
+    /**
+     * How far a landmark's height may stray from the figures above, as a
+     * fraction, redrawn on every load.
+     *
+     * Three identical plants standing in three corners read as three copies of
+     * one asset. The range is split so the corners cannot collide on a height,
+     * which is the whole point of varying them.
+     */
+    readonly variance?: number;
   };
 
   /** The barrier standing in the quiet zone, outside the board. */
@@ -741,7 +767,7 @@ export const THEME: Record<ThemeId, Theme> = {
 
   desert: {
     label: 'Desert',
-    blurb: 'Sandstone ruins and obelisks in a dry heat.',
+    blurb: 'Sandstone ruins and standing cactus in a dry heat.',
 
     surfaces: {
       wallTop: {
@@ -769,23 +795,23 @@ export const THEME: Record<ThemeId, Theme> = {
         resolution: 64,
         tile: 4,
       },
-      // Marks sit low on the shaft. The camera is pitched down far enough
-      // that an obelisk's upper half is out of frame from any distance at
-      // which its carving could be read.
+      // The one green thing in the world, which is what makes it read as
+      // alive rather than as another weathered rock.
       trunk: {
-        style: 'glyphs',
-        base: ['#b99a6f', '#b99a6f', '#a88a62', '#c9a97c'],
-        light: '#dcc39a',
-        dark: '#7d6248',
-        edge: '#dcc39a',
-        // A glyph needs more than the eight pixels a shaft usually gets.
+        style: 'ribbed',
+        base: ['#4f8a3f', '#4f8a3f', '#457c37', '#5a9748'],
+        light: '#6fae55',
+        dark: '#315824',
+        edge: '#e8e3c0',
+        // Ribs need room to alternate; eight pixels gives one groove.
         resolution: 16,
       },
+      // Saguaro flowers are cream, not the hot pink a cactus is drawn with.
       crown: {
-        style: 'speckle',
-        base: ['#c9a97c', '#c9a97c', '#b99a6f', '#d6b98c'],
-        light: '#e0c69a',
-        dark: '#9c8059',
+        style: 'petal',
+        base: ['#4f8a3f', '#457c37', '#5a9748'],
+        light: '#fbf3d8',
+        dark: '#f0e3ba',
       },
       border: {
         style: 'planks',
@@ -805,11 +831,20 @@ export const THEME: Record<ThemeId, Theme> = {
 
     decor: {
       landmark: {
-        // An obelisk: a tall banded shaft under a pyramidion.
-        trunkWidth: 2.0,
-        trunkHeight: 4.0,
-        tiers: [{ width: 2.0, height: 1.2, y: 5.6 }],
-        shape: 'tapered',
+        // A saguaro: a ribbed shaft, two arms at different heights, and a
+        // crown of flowers. The arms are asymmetric on purpose — a cactus
+        // with a matching pair either side reads as a candelabra.
+        trunkWidth: 1.5,
+        trunkHeight: 4.6,
+        tiers: [{ width: 1.1, height: 0.3, y: 5.75 }],
+        shape: 'box',
+        armWidth: 0.85,
+        arms: [
+          { side: -1, y: 1.5, reach: 1.5, rise: 1.6 },
+          { side: 1, y: 2.4, reach: 1.3, rise: 1.2 },
+        ],
+        // A tenth either way, redrawn each load, so no two corners match.
+        variance: 0.1,
       },
       border: {
         // Ruins: the posts are still standing and nothing between them is.

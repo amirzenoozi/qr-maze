@@ -298,53 +298,32 @@ const paintStrata: Painter = (context, size, random, surface) => {
 };
 
 /**
- * A small vocabulary of carved marks, four pixels wide and three tall.
+ * Ribbed flesh, for a cactus shaft.
  *
- * Real hieroglyphs are far denser than this; what survives being magnified
- * from a handful of pixels is a silhouette, so each one is reduced to the
- * least it can be and still not read as noise.
+ * A saguaro's ribs run the full height of the plant, and a vertical line is
+ * the one feature that survives this resolution intact: it sits on the pixel
+ * grid exactly, so magnifying it keeps a clean edge where a curve would break
+ * into a staircase. Each rib is a shaded groove with a lit crest beside it,
+ * which is what turns a flat green column into something round.
  */
-const GLYPHS: readonly (readonly string[])[] = [
-  ['.##.', '#..#', '.##.'],
-  ['#...', '###.', '#..#'],
-  ['.#.#', '#.#.', '.#.#'],
-  ['..#.', '####', '..#.'],
-];
+const paintRibbed: Painter = (context, size, random, surface) => {
+  speckle(context, size, random, surface.base);
 
-/** Height of one glyph plus the gap under it, in texture pixels. */
-const GLYPH_PITCH = 4;
+  const pitch = Math.max(3, Math.round(size / 5));
+  for (let x = 0; x < size; x += pitch) {
+    context.fillStyle = surface.dark;
+    context.fillRect(x, 0, 1, size);
+    context.fillStyle = surface.light;
+    context.fillRect((x + 1) % size, 0, 1, size);
+  }
 
-/**
- * Banded stone under a column of carved marks.
- *
- * The marks are stacked upwards from the bottom of the tile rather than
- * centred. The gameplay camera is pitched down far enough that the top of a
- * tall landmark leaves the frame at any distance you could read it from, so
- * carving the upper half would be carving something nobody sees.
- */
-const paintGlyphs: Painter = (context, size, random, surface) => {
-  paintStrata(context, size, random, surface);
-
-  const rows = Math.max(1, Math.floor(size / (GLYPH_PITCH * 2)));
-  const left = Math.max(0, Math.floor((size - 4) / 2));
-
-  for (let row = 0; row < rows; row++) {
-    const glyph = GLYPHS[Math.floor(random() * GLYPHS.length)];
-    const top = size - (row + 1) * GLYPH_PITCH;
-
-    glyph.forEach((line, y) => {
-      for (let x = 0; x < line.length; x++) {
-        if (line[x] !== '#') continue;
-        // The mark is cut into the stone, so it reads as shadow with a lit
-        // lip under it. One pixel of relief is what stops it looking painted.
-        context.fillStyle = surface.dark;
-        context.fillRect(left + x, top + y, 1, 1);
-        if (y === glyph.length - 1 && top + y + 1 < size) {
-          context.fillStyle = surface.light;
-          context.fillRect(left + x, top + y + 1, 1, 1);
-        }
-      }
-    });
+  // Spines cluster on the crests, never in the grooves.
+  const spines = repeats(size, 5);
+  for (let i = 0; i < spines; i++) {
+    const rib = Math.floor(random() * Math.ceil(size / pitch));
+    const y = Math.floor(random() * size);
+    context.fillStyle = surface.edge ?? surface.light;
+    context.fillRect((rib * pitch + 1) % size, y, 1, 1);
   }
 };
 
@@ -360,7 +339,7 @@ const PAINTERS: Record<SurfaceStyle, Painter> = {
   grid: paintGrid,
   traces: paintTraces,
   strata: paintStrata,
-  glyphs: paintGlyphs,
+  ribbed: paintRibbed,
 };
 
 /** Paint a surface and wrap it with pixel-art-appropriate filtering. */
