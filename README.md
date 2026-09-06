@@ -171,6 +171,20 @@ being shared, because a lit grid under a spring morning reads as a building
 site — the paint and the light have to be chosen together. `N` still switches
 between the two a world ships.
 
+On top of that a world can declare ground detail: sand banked against the foot
+of every block, flat stones scattered along the path, specks drifting across on
+the wind, and a little height and shade taken off each block so a wall reads as
+masonry rather than one extruded colour. All four are optional and only the
+desert asks for them today. They are placed where the camera actually looks:
+the view is pitched forty-three degrees down with a fifty degree lens, so the
+top of the frame still points below the horizon and the sky is never on screen
+during play. Detail pays off on the floor and the first couple of units above
+it; anything on a skyline would be rendered and never seen.
+
+None of it reaches the code. Every piece unmounts in the top-down view, and the
+block tinting is skipped there too, because a grey module is neither black nor
+white to a decoder.
+
 None of it can affect scanning, and that is worth being precise about. The
 top-down view swaps every material for flat black and white and unmounts the
 decoration; the pinned card is a separate 2D raster of the matrix. Neither one

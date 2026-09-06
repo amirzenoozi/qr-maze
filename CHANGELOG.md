@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-09-06
+
+### Added
+
+- Ground detail as four optional slots on a world: sand banked at the foot of
+  each block, flat stones along the path, specks drifting on the wind, and a
+  little height and shade taken off each block. Only the desert declares them
+  today; the machinery is generic so any world can.
+- Carved marks up the shaft of the desert obelisks, and a floor tile spanning
+  four modules instead of one so the sand stops reading as a grid.
+
+### Changed
+
+- A texture can now name its own canvas size, and feature counts scale with it,
+  so a larger tile is denser rather than the same few marks stretched out.
+
 ## [1.14.1] - 2026-09-05
 
 ### Changed
@@ -434,7 +450,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.1...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.15.0...HEAD
+[1.15.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.13.0...v1.14.0
 [1.13.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.12.1...v1.13.0
