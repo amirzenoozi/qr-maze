@@ -119,6 +119,34 @@ export interface CactusArm {
   readonly rise: number;
 }
 
+/**
+ * A one-off object standing somewhere on the board.
+ *
+ * The shape names a builder in `components/Props`; the geometry lives there
+ * rather than here because a snowman written as a list of box coordinates is
+ * forty unreadable lines, while `{ shape: 'snowman' }` says what it is.
+ */
+export type PropShape = 'snowman' | 'husky' | 'board';
+
+/**
+ * Where a prop stands.
+ *
+ * `outside` puts it past the fence, in the quiet zone no player ever walks.
+ * `wall-top` stands it on a wall block, which is the only place inside the
+ * board it can go: an object on a corridor cell would be one the player walks
+ * straight through, because the store only ever refuses a move into a dark
+ * module. Something solid-looking that isn't solid teaches the player that
+ * nothing on screen means anything.
+ */
+export type PropPlacement = 'outside' | 'wall-top';
+
+export interface ThemeProp {
+  readonly shape: PropShape;
+  readonly where: PropPlacement;
+  /** How many of this shape to stand. */
+  readonly count: number;
+}
+
 export interface ThemeDecor {
   /**
    * The thing standing on each of the three finder patterns.
@@ -249,6 +277,16 @@ export interface ThemeDecor {
     /** Largest downward height scale, 0..1. */
     readonly shrink: number;
   };
+
+  /**
+   * Scenery objects, placed once per board rather than scattered.
+   *
+   * Seeded from the maze, so a given board always stands the same husky in
+   * the same corner. Unlike landmark height, position is something a player
+   * can navigate by, and scenery that moves between attempts is scenery that
+   * cannot be used to orient.
+   */
+  readonly props?: readonly ThemeProp[];
 
   /** The two cells that mean something. */
   readonly exit: {
@@ -658,6 +696,11 @@ export const THEME: Record<ThemeId, Theme> = {
       // Almost all depth, almost no tint: darkening white goes grey, which
       // reads as dirty snow rather than deep snow.
       wallVariation: { tint: 0.06, shrink: 0.14 },
+      props: [
+        { shape: 'snowman', where: 'wall-top', count: 2 },
+        { shape: 'husky', where: 'outside', count: 1 },
+        { shape: 'board', where: 'outside', count: 2 },
+      ],
       exit: {
         // Warm markers on purpose. Everything else here is cold, so the one
         // orange object on the board is unmistakably the thing to walk to.

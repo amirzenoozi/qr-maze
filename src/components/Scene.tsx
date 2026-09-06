@@ -13,6 +13,7 @@ import { Markers } from './Markers';
 import { Motes } from './Motes';
 import { ScanMarkers } from './ScanMarkers';
 import { Player } from './Player';
+import { Props } from './Props';
 import { Skirt } from './Skirt';
 import { Trees } from './Trees';
 import { Walls } from './Walls';
@@ -108,6 +109,7 @@ export function Scene(): React.JSX.Element | null {
       <Flowers maze={maze} cameraMode={cameraMode} theme={theme} />
       <Trees maze={maze} cameraMode={cameraMode} theme={theme} />
       <Markers maze={maze} cameraMode={cameraMode} theme={theme} />
+      <Props maze={maze} cameraMode={cameraMode} theme={theme} />
       <Motes maze={maze} cameraMode={cameraMode} theme={theme} />
       <ScanMarkers maze={maze} player={player} cameraMode={cameraMode} />
       <Confetti maze={maze} active={won} cameraMode={cameraMode} />

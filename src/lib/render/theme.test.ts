@@ -180,6 +180,12 @@ const SIGHT_LINE = 2.8;
 /** Texture pixels one module gets at the default tile size. */
 const BASE_TILE_PIXELS = 16;
 
+/** Every shape `components/Props` knows how to build. */
+const SHAPES = ['snowman', 'husky', 'board'];
+
+/** Every place a prop is allowed to stand. */
+const PLACEMENTS = ['outside', 'wall-top'];
+
 describe('ground detail', () => {
   it.each(ALL)('%s banks a drift the body can pass over', (themeId) => {
     const skirt = THEME[themeId].decor.skirt;
@@ -272,6 +278,50 @@ describe('ground detail', () => {
     expect(snow.wallVariation!.tint).toBeLessThan(snow.wallVariation!.shrink);
   });
 
+  it.each(ALL)('%s stands props that fit where it puts them', (id) => {
+    const props = THEME[id].decor.props;
+    if (!props) return;
+
+    expect(props.length).toBeGreaterThan(0);
+    for (const prop of props) {
+      expect(SHAPES).toContain(prop.shape);
+      expect(PLACEMENTS).toContain(prop.where);
+      expect(prop.count).toBeGreaterThan(0);
+      // Every prop is a one-off mesh group rather than an instanced batch, so
+      // a world that asked for dozens would cost more than all the scenery.
+      expect(prop.count).toBeLessThanOrEqual(4);
+    }
+  });
+
+  it.each(ALL)('%s never asks for more wall-top props than a board can hold', (id) => {
+    const props = THEME[id].decor.props;
+    if (!props) return;
+
+    const onWalls = props
+      .filter((prop) => prop.where === 'wall-top')
+      .reduce((total, prop) => total + prop.count, 0);
+    // The smallest symbol is 21 modules across with the finder corners spoken
+    // for, which still leaves a wide margin over anything this permits.
+    expect(onWalls).toBeLessThanOrEqual(8);
+  });
+
+  it('gives the snow a snowman, a husky and a lost board', () => {
+    const props = THEME.snow.decor.props;
+    expect(props).toBeDefined();
+
+    const shapes = props?.map((prop) => prop.shape) ?? [];
+    expect(shapes).toContain('snowman');
+    expect(shapes).toContain('husky');
+    expect(shapes).toContain('board');
+
+    // The snowman goes on a block. On a corridor cell it would be an object
+    // the player walks straight through, since only a dark module refuses a
+    // move, and something solid-looking that isn't solid teaches the player
+    // that nothing on screen means anything.
+    const snowman = props?.find((prop) => prop.shape === 'snowman');
+    expect(snowman?.where).toBe('wall-top');
+  });
+
   it('dresses the desert with all four', () => {
     const desert = THEME.desert.decor;
     expect(desert.skirt).toBeDefined();
@@ -342,6 +392,7 @@ describe('park is unchanged', () => {
     expect(park.decor.landmark.arms).toBeUndefined();
     expect(park.decor.landmark.variance).toBeUndefined();
     expect(park.decor.border.railCap).toBeUndefined();
+    expect(park.decor.props).toBeUndefined();
     expect(park.decor.landmark.emissive).toBeUndefined();
     expect(park.decor.landmark.tiers).toEqual([
       { width: 4.4, height: 1.1, y: 3.1 },
