@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.0] - 2026-09-06
+
+### Changed
+
+- The desert stands a cactus on each finder pattern instead of an obelisk: a
+  ribbed shaft, two arms at different heights and a crown of flowers. The three
+  are dealt separate bands of a ten percent height range, redrawn on every
+  load, so no two corners match and none of them stands still between visits.
+- A landmark can now branch, and can declare how far its height may stray.
+  Both are optional and only the desert asks for them.
+
+### Removed
+
+- The carved-glyph painter, which had one caller and lost it with the obelisk.
+
 ## [1.15.0] - 2026-09-06
 
 ### Added
@@ -450,7 +465,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.15.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.16.0...HEAD
+[1.16.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.1...v1.15.0
 [1.14.1]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.0...v1.14.1
 [1.14.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.13.0...v1.14.0

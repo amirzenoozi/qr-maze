@@ -154,7 +154,7 @@ is treated as "no preference yet" rather than as an error.
 |---|---|---|---|---|
 | Park | Grass-topped hedges | Trees | Picket fence | Wildflowers |
 | Snow | Snow-capped stone | Pines | Picket fence | Drifts |
-| Desert | Banded sandstone | Obelisks | Standing posts | Loose stones |
+| Desert | Banded sandstone | Cactus | Standing posts | Loose stones |
 
 Two more — Neon and Circuit — are built and tested but withheld from the
 picker. `THEMES` in `theme.ts` is the list on offer and `THEME` is every world
@@ -180,6 +180,13 @@ the view is pitched forty-three degrees down with a fifty degree lens, so the
 top of the frame still points below the horizon and the sky is never on screen
 during play. Detail pays off on the floor and the first couple of units above
 it; anything on a skyline would be rendered and never seen.
+
+A landmark can also branch and vary. The desert grows a saguaro on each finder
+pattern — a ribbed shaft, two arms at different heights, a crown of flowers —
+and each of the three is dealt its own share of a ten percent height range,
+redrawn on every load. Dealing bands rather than drawing three loose numbers is
+what stops two corners landing on the same height, which is the only reason to
+vary them at all.
 
 None of it reaches the code. Every piece unmounts in the top-down view, and the
 block tinting is skipped there too, because a grey module is neither black nor
