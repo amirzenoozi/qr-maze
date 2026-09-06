@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - 2026-09-06
+
+### Added
+
+- One-off scenery objects a world can stand on its board, either outside the
+  fence in the quiet zone or on top of a wall block.
+- A snowman, a husky and a planted snowboard for the snow world. The snowman
+  stands on a block rather than in a corridor, so it is never an object the
+  player can walk through.
+
 ## [1.17.0] - 2026-09-06
 
 ### Added
@@ -482,7 +492,8 @@ finished code with a phone.
 - Nothing about the gameplay styling can affect scanning. The top-down view and
   the pinned card are separate flat passes over the same verified matrix.
 
-[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.17.0...HEAD
+[Unreleased]: https://github.com/amirzenoozi/qr-maze/compare/v1.18.0...HEAD
+[1.18.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.17.0...v1.18.0
 [1.17.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.16.0...v1.17.0
 [1.16.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.15.0...v1.16.0
 [1.15.0]: https://github.com/amirzenoozi/qr-maze/compare/v1.14.1...v1.15.0

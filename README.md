@@ -195,6 +195,21 @@ what stops two corners landing on the same height, which is the only reason to
 vary them at all. The snow uses the same range on its pines, for the same
 reason: three conifers cut to one height read as manufactured.
 
+A world can also stand a few one-off objects, which the snow uses for a snowman,
+a husky and a snowboard planted nose-down in a drift. They go in one of two
+places. Outside the fence is free real estate: the quiet zone is four modules of
+blank ground nobody ever walks. On a wall block is the only place inside the
+board they can go, because an object standing on a corridor cell is one the
+player walks straight through — the store refuses a move into a dark module and
+nothing else — and something solid-looking that isn't solid teaches the player
+that nothing on screen means anything.
+
+Their positions are seeded from the maze rather than the clock, so a board
+always stands the same husky in the same corner. Landmark heights re-roll on
+every load because height is only a look; a prop's position is something you can
+navigate by, and scenery that wanders between attempts is scenery nobody can use
+to orient.
+
 None of it reaches the code. Every piece unmounts in the top-down view, and the
 block tinting is skipped there too, because a grey module is neither black nor
 white to a decoder.
